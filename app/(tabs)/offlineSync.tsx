@@ -45,7 +45,7 @@ export const syncOfflineInventories = async () => {
 
     try {
       const saveRes = await fetch(
-        "http://192.168.50.55:3001/inventory/grouped",
+        "http://192.168.50.54:3001/inventory/grouped",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -57,7 +57,7 @@ export const syncOfflineInventories = async () => {
 
       // ✅ LOCK previous week's inventory (if exists)
       if (previousWeekId) {
-        const lockRes = await fetch("http://192.168.50.55:3001/lock", {
+        const lockRes = await fetch("http://192.168.50.54:3001/lock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

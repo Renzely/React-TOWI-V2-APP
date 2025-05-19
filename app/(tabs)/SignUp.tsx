@@ -32,7 +32,7 @@ const SignUp = () => {
     }
 
     try {
-      const res = await fetch("http://192.168.50.55:3001/signup", {
+      const res = await fetch("http://192.168.50.54:3001/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -52,7 +52,7 @@ const SignUp = () => {
 
   const handleVerifyOtp = async () => {
     try {
-      const res = await fetch("http://192.168.50.55:3001/verify-otp", {
+      const res = await fetch("http://192.168.50.54:3001/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, otp }),

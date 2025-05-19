@@ -410,6 +410,83 @@ const loginStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+
+  // ATTENDANCE
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f2f2f2",
+  },
+  appBarAttendance: {
+    height: 60,
+    backgroundColor: "green", // valid green color
+    justifyContent: "center",
+    paddingHorizontal: 20, // add padding for spacing
+  },
+
+  appBarTitleAttendance: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  containerAttendance: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    padding: 20,
+  },
+  titleAttendance: {
+    fontSize: 24,
+    marginBottom: 20,
+  },
+  selfie: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    marginVertical: 20,
+  },
+  buttonContainer: {
+    marginVertical: 10,
+    width: "60%",
+  },
+  timestamp: {
+    fontSize: 18,
+    marginVertical: 4,
+    color: "Black",
+  },
+  sectionLabel: {
+    marginTop: 20,
+    fontWeight: "bold",
+    fontSize: 20,
+    textAlign: "center",
+  },
+  iconContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  viewText: {
+    marginLeft: 6,
+    color: "blue",
+    textDecorationLine: "underline",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    width: "90%",
+    alignItems: "center",
+  },
+  modalImage: {
+    width: "100%",
+    height: 400,
+    marginBottom: 15,
+  },
 });
 
 export default loginStyles;

@@ -82,7 +82,7 @@ const LoginScreen = () => {
 
     // Online login logic
     try {
-      const response = await fetch("http://192.168.50.55:3001/login", {
+      const response = await fetch("http://192.168.50.54:3001/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

@@ -5,7 +5,7 @@ const Mongodb = () => {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("http://192.168.50.55:3001/inventory") // Replace with your actual IP
+    fetch("http://192.168.50.54:3001/inventory") // Replace with your actual IP
       .then((res) => res.json())
       .then((data) => setMessage(data.message))
       .catch((err) => console.error("Fetch error:", err));
