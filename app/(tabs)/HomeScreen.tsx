@@ -8,6 +8,7 @@ import {
   ListRenderItem,
   Alert,
   TextInput,
+  Modal,
   ActivityIndicator,
   Button,
 } from "react-native";
@@ -22,6 +23,11 @@ import { ScrollView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { syncOfflineInventories } from "./offlineSync";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { Image } from "react-native";
+import { Picker } from "@react-native-picker/picker";
+import DropDownPicker from "react-native-dropdown-picker";
 
 type SKUCarried = {
   sku: string;
@@ -79,6 +85,576 @@ export interface OfflineInventoryItem {
   previousWeekId?: string;
 }
 
+const AttendanceScreen = () => {
+  const [currentTime, setCurrentTime] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
+  const [hasTimedIn, setHasTimedIn] = useState(false);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [selectedOutlet, setSelectedOutlet] = useState("");
+  const [outletOptions, setOutletOptions] = useState([
+    { label: "Select Branch", value: "" },
+  ]);
+  const [email, setUserEmail] = useState("");
+  const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  const [timeInTimestamp, setTimeInTimestamp] = useState<string | null>(null);
+  const [timeOutTimestamp, setTimeOutTimestamp] = useState<string | null>(null);
+  const [addressTimeIn, setAddressTimeIn] = useState<string | null>(null);
+  const [addressTimeOut, setAddressTimeOut] = useState<string | null>(null);
+  const [timeInSelfieUri, setTimeInSelfieUri] = useState<string | null>(null);
+  const [timeOutSelfieUri, setTimeOutSelfieUri] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSelfieUri, setSelectedSelfieUri] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+
+      // Format date: e.g., May 19, 2025
+      const options = {
+        year: "numeric" as const,
+        month: "long" as const,
+        day: "numeric" as const,
+      };
+
+      const formattedDate = now.toLocaleDateString(undefined, options);
+
+      // Format time: e.g., 2:45 PM
+      const hours = now.getHours() % 12 || 12;
+      const minutes = now.getMinutes().toString().padStart(2, "0");
+      const ampm = now.getHours() >= 12 ? "PM" : "AM";
+      const formattedTime = `${hours}:${minutes} ${ampm}`;
+
+      setCurrentDate(formattedDate);
+      setCurrentTime(formattedTime);
+    };
+
+    updateDateTime(); // Initial call
+    const interval = setInterval(updateDateTime, 60000); // Update every 60 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
+  const viewSelfie = (uri: string) => {
+    setSelectedSelfieUri(uri);
+    setModalVisible(true);
+  };
+  const [location, setLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  const getAddressFromCoords = async (
+    lat: number,
+    lon: number
+  ): Promise<string | null> => {
+    try {
+      const [address] = await Location.reverseGeocodeAsync({
+        latitude: lat,
+        longitude: lon,
+      });
+      if (address) {
+        return `${address.street || ""}, ${
+          address.city || address.district || ""
+        }, ${address.region || ""}`;
+      }
+    } catch (error) {
+      console.error("Reverse geocoding failed", error);
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission to access location was denied");
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+
+      // Remove reverse geocoding here — now handled in Time In/Out functions
+    })();
+  }, []);
+
+  useEffect(() => {
+    const loadOutlets = async () => {
+      try {
+        const storedBranch = await AsyncStorage.getItem("outlet");
+
+        if (storedBranch) {
+          const outlets = storedBranch
+            .split(",")
+            .map((outlet) => outlet.trim());
+          const options = outlets.map((outlet) => ({
+            label: outlet,
+            value: outlet,
+          }));
+
+          setOutletOptions([{ label: "Select Branch", value: "" }, ...options]);
+
+          // Optional: set default selected outlet to first actual outlet
+          if (options.length > 0) {
+            setSelectedOutlet(options[0].value);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load outlets", error);
+      }
+    };
+
+    loadOutlets();
+  }, []);
+
+  // Request location permission & get coordinates
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission to access location was denied");
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+    })();
+  }, []);
+
+  useEffect(() => {
+    const getEmail = async () => {
+      const email = await AsyncStorage.getItem("email");
+      if (email) setUserEmail(email);
+    };
+    getEmail();
+  }, []);
+
+  const loadAttendanceStatusForOutlet = async (outlet: string) => {
+    const today = new Date().toISOString().split("T")[0];
+
+    // Reset everything if no outlet is selected
+    if (!outlet) {
+      setHasTimedIn(false);
+      setHasTimedOut(false);
+      setTimeInTimestamp(null);
+      setTimeOutTimestamp(null);
+      setAddressTimeIn(null);
+      setAddressTimeOut(null);
+      setTimeInSelfieUri(null);
+      setTimeOutSelfieUri(null);
+      return;
+    }
+
+    // Keys
+    const hasTimedInKey = `hasTimedIn_${outlet}`;
+    const timeInDateKey = `timeInDate_${outlet}`;
+    const timeInTimestampKey = `timeInTimestamp_${outlet}`;
+    const addressTimeInKey = `addressTimeIn_${outlet}`;
+    const timeInSelfieUriKey = `timeInSelfieUri_${outlet}`;
+    const hasTimedOutKey = `hasTimedOut_${outlet}`;
+    const timeOutDateKey = `timeOutDate_${outlet}`;
+    const timeOutTimestampKey = `timeOutTimestamp_${outlet}`;
+    const addressTimeOutKey = `addressTimeOut_${outlet}`;
+    const timeOutSelfieUriKey = `timeOutSelfieUri_${outlet}`;
+
+    // Load & Validate Time In
+    const storedTimeIn = await AsyncStorage.getItem(hasTimedInKey);
+    const storedTimeInDate = await AsyncStorage.getItem(timeInDateKey);
+
+    if (storedTimeIn === "true" && storedTimeInDate === today) {
+      setHasTimedIn(true);
+      setTimeInTimestamp(await AsyncStorage.getItem(timeInTimestampKey));
+      setAddressTimeIn(await AsyncStorage.getItem(addressTimeInKey));
+      setTimeInSelfieUri(await AsyncStorage.getItem(timeInSelfieUriKey));
+    } else {
+      setHasTimedIn(false);
+      setTimeInTimestamp(null);
+      setAddressTimeIn(null);
+      setTimeInSelfieUri(null);
+      await AsyncStorage.multiRemove([
+        hasTimedInKey,
+        timeInDateKey,
+        timeInTimestampKey,
+        addressTimeInKey,
+        timeInSelfieUriKey,
+      ]);
+    }
+
+    // Load & Validate Time Out
+    const storedTimeOut = await AsyncStorage.getItem(hasTimedOutKey);
+    const storedTimeOutDate = await AsyncStorage.getItem(timeOutDateKey);
+
+    if (storedTimeOut === "true" && storedTimeOutDate === today) {
+      setHasTimedOut(true);
+      setTimeOutTimestamp(await AsyncStorage.getItem(timeOutTimestampKey));
+      setAddressTimeOut(await AsyncStorage.getItem(addressTimeOutKey));
+      setTimeOutSelfieUri(await AsyncStorage.getItem(timeOutSelfieUriKey));
+    } else {
+      setHasTimedOut(false);
+      setTimeOutTimestamp(null);
+      setAddressTimeOut(null);
+      setTimeOutSelfieUri(null);
+      await AsyncStorage.multiRemove([
+        hasTimedOutKey,
+        timeOutDateKey,
+        timeOutTimestampKey,
+        addressTimeOutKey,
+        timeOutSelfieUriKey,
+      ]);
+    }
+  };
+
+  // Load attendance data when selected outlet changes
+  useEffect(() => {
+    loadAttendanceStatusForOutlet(selectedOutlet);
+  }, [selectedOutlet]);
+
+  const handleTimeIn = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Camera access is required to take a selfie.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
+      cameraType: ImagePicker.CameraType.front,
+    });
+
+    if (result.canceled || !result.assets?.length) {
+      Alert.alert("Selfie is required to Time In.");
+      return;
+    }
+
+    try {
+      const uri = result.assets[0].uri;
+      setSelfieUri(uri);
+      setTimeInSelfieUri(uri);
+
+      const fileName = `Time_In_(${email}).jpg`;
+      const presignRes = await fetch(
+        "http://192.168.50.54:3001/save-attendance-images",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName }),
+        }
+      );
+
+      if (!presignRes.ok) throw new Error("Failed to get upload URL");
+      const { url } = await presignRes.json();
+
+      const imageBlob = await fetch(uri).then((r) => r.blob());
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "image/jpeg" },
+        body: imageBlob,
+      });
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      const selfieUrl = url.split("?")[0];
+      const now = new Date();
+      const date = now.toISOString().split("T")[0];
+      const timeIn = now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      });
+
+      let resolvedAddress: string | null = null;
+      if (location) {
+        resolvedAddress = await getAddressFromCoords(
+          location.latitude,
+          location.longitude
+        );
+        setAddressTimeIn(resolvedAddress);
+      }
+
+      // Save attendance to backend
+      const saveRes = await fetch(
+        "http://192.168.50.54:3001/attendance/time-in",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            date,
+            outlet: selectedOutlet,
+            timeIn,
+            selfieUrl,
+            location,
+            timeInLocation: resolvedAddress,
+          }),
+        }
+      );
+
+      if (!saveRes.ok) throw new Error("Failed to save time-in data");
+
+      setHasTimedIn(true);
+      setTimeInTimestamp(`${date} ${timeIn}`);
+
+      const hasTimedInKey = `hasTimedIn_${selectedOutlet}`;
+      const timeInDateKey = `timeInDate_${selectedOutlet}`;
+      const timeInTimestampKey = `timeInTimestamp_${selectedOutlet}`;
+      const addressTimeInKey = `addressTimeIn_${selectedOutlet}`;
+      const timeInSelfieUriKey = `timeInSelfieUri_${selectedOutlet}`;
+      await AsyncStorage.setItem(timeInSelfieUriKey, uri);
+      await AsyncStorage.setItem(hasTimedInKey, "true");
+      await AsyncStorage.setItem(timeInDateKey, date);
+      await AsyncStorage.setItem(timeInTimestampKey, `${date} ${timeIn}`);
+
+      if (resolvedAddress) {
+        await AsyncStorage.setItem(addressTimeInKey, resolvedAddress);
+      }
+
+      Alert.alert("Time In recorded!");
+    } catch (error: unknown) {
+      console.error(error);
+      Alert.alert(
+        "Failed to upload or save time-in.",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  };
+
+  const handleTimeOut = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Camera access is required to take a selfie.");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
+      cameraType: ImagePicker.CameraType.front,
+    });
+
+    if (result.canceled || !result.assets?.length) {
+      Alert.alert("Selfie is required to Time Out.");
+      return;
+    }
+
+    try {
+      const uri = result.assets[0].uri;
+      const fileName = `Time_Out_(${email}).jpg`;
+
+      const presignRes = await fetch(
+        "http://192.168.50.54:3001/save-attendance-images",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName }),
+        }
+      );
+
+      if (!presignRes.ok) throw new Error("Failed to get upload URL");
+
+      const { url } = await presignRes.json();
+
+      const imageBlob = await fetch(uri).then((r) => r.blob());
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "image/jpeg" },
+        body: imageBlob,
+      });
+
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        throw new Error(`Upload failed: ${errorText}`);
+      }
+
+      const timeOutSelfieUrl = url.split("?")[0];
+      const now = new Date();
+      const date = now.toISOString().split("T")[0];
+      const timeOut = now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true,
+      });
+
+      let resolvedAddress: string | null = null;
+      if (location) {
+        resolvedAddress = await getAddressFromCoords(
+          location.latitude,
+          location.longitude
+        );
+        setAddressTimeOut(resolvedAddress);
+      }
+
+      // Save to backend
+      const saveRes = await fetch(
+        "http://192.168.50.54:3001/attendance/time-out",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            date,
+            outlet: selectedOutlet,
+            timeOut,
+            timeOutSelfieUrl,
+            location,
+            timeOutLocation: resolvedAddress,
+          }),
+        }
+      );
+
+      if (!saveRes.ok) throw new Error("Failed to save time-out data");
+
+      setHasTimedOut(true);
+      setTimeOutTimestamp(`${date} ${timeOut}`);
+      setTimeOutSelfieUri(uri);
+      const hasTimedOutKey = `hasTimedOut_${selectedOutlet}`;
+      const timeOutDateKey = `timeOutDate_${selectedOutlet}`;
+      const timeOutTimestampKey = `timeOutTimestamp_${selectedOutlet}`;
+      const addressTimeOutKey = `addressTimeOut_${selectedOutlet}`;
+      const timeOutSelfieUriKey = `timeOutSelfieUri_${selectedOutlet}`;
+      await AsyncStorage.setItem(timeOutSelfieUriKey, uri);
+      await AsyncStorage.setItem(hasTimedOutKey, "true");
+      await AsyncStorage.setItem(timeOutDateKey, date);
+      await AsyncStorage.setItem(timeOutTimestampKey, `${date} ${timeOut}`);
+
+      if (resolvedAddress) {
+        await AsyncStorage.setItem(addressTimeOutKey, resolvedAddress);
+      }
+
+      Alert.alert("Time Out recorded!");
+    } catch (error: unknown) {
+      console.error(error);
+      Alert.alert(
+        "Failed to upload or save time-out.",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  };
+
+  return (
+    <View style={styles.safeArea}>
+      <View style={styles.appBarAttendance}>
+        <Text style={styles.appBarTitleAttendance}>ATTENDANCE</Text>
+      </View>
+
+      <View style={styles.containerAttendance}>
+        <View style={{ alignItems: "center", marginBottom: 20 }}>
+          <Text style={{ fontSize: 24, fontWeight: "600" }}>{currentDate}</Text>
+          <Text style={{ fontSize: 56, fontWeight: "bold", marginTop: 5 }}>
+            {currentTime}
+          </Text>
+        </View>
+
+        <View style={styles.pickerWrapper}>
+          <DropDownPicker
+            open={open}
+            value={selectedOutlet}
+            items={outletOptions}
+            setOpen={setOpen}
+            setValue={setSelectedOutlet}
+            setItems={setOutletOptions}
+            searchable={true}
+            placeholder="Select Branch"
+            disabled={hasTimedIn && !hasTimedOut} // disable after TIME IN, enable after TIME OUT
+            style={{ width: 250 }}
+            dropDownContainerStyle={{ width: 250 }}
+          />
+        </View>
+
+        {/* TIME IN */}
+        <Text style={styles.sectionLabel}>TIME IN</Text>
+
+        <View style={styles.buttonContainer}>
+          <Button
+            title="TIME IN"
+            onPress={handleTimeIn}
+            disabled={hasTimedIn}
+            color={hasTimedIn ? "gray" : "green"}
+          />
+        </View>
+
+        {/* 👇 View Time In Selfie Icon */}
+        {timeInSelfieUri && (
+          <TouchableOpacity onPress={() => viewSelfie(timeInSelfieUri)}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="eye" size={24} color="blue" />
+              <Text style={styles.viewText}>View Time In Selfie</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {timeInTimestamp && (
+          <Text style={styles.timestamp}> {timeInTimestamp}</Text>
+        )}
+
+        {addressTimeIn && (
+          <Text style={styles.timestamp}> {addressTimeIn}</Text>
+        )}
+
+        {/* TIME OUT */}
+        <Text style={styles.sectionLabel}>TIME OUT</Text>
+
+        <View style={styles.buttonContainer}>
+          <Button
+            title="TIME OUT"
+            onPress={handleTimeOut}
+            disabled={!hasTimedIn || hasTimedOut}
+            color={!hasTimedIn || hasTimedOut ? "gray" : "red"}
+          />
+        </View>
+
+        {/* 👇 View Time Out Selfie Icon */}
+        {timeOutSelfieUri && (
+          <TouchableOpacity onPress={() => viewSelfie(timeOutSelfieUri)}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="eye" size={24} color="blue" />
+              <Text style={styles.viewText}>View Time Out Selfie</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {timeOutTimestamp && (
+          <Text style={styles.timestamp}> {timeOutTimestamp}</Text>
+        )}
+
+        {addressTimeOut && (
+          <Text style={styles.timestamp}> {addressTimeOut}</Text>
+        )}
+
+        {/* 📷 Modal to View Selfie Image */}
+        {selectedSelfieUri && (
+          <Modal visible={modalVisible} transparent={true} animationType="fade">
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Image
+                  source={{ uri: selectedSelfieUri }}
+                  style={styles.modalImage}
+                  resizeMode="contain"
+                />
+                <Button title="Close" onPress={() => setModalVisible(false)} />
+              </View>
+            </View>
+          </Modal>
+        )}
+      </View>
+    </View>
+  );
+};
+
 const SyncScreen = () => {
   const handleSync = async () => {
     try {
@@ -120,7 +696,7 @@ const ProfileScreen = () => {
           setUserData(parsedUser);
         } else {
           // Online login: Fetch from API
-          const response = await fetch("http://192.168.50.55:3001/profile", {
+          const response = await fetch("http://192.168.50.54:3001/profile", {
             headers: {
               Authorization: `Bearer ${userToken}`,
             },
@@ -504,7 +1080,7 @@ const InventoryContent = () => {
 
       if (netState.isConnected) {
         const res = await fetch(
-          `http://192.168.50.55:3001/inventoryHistory?email=${encodeURIComponent(
+          `http://192.168.50.54:3001/inventoryHistory?email=${encodeURIComponent(
             userEmail
           )}`
         );
@@ -640,11 +1216,14 @@ const Inventory = () => {
             let iconName: keyof typeof Ionicons.glyphMap;
 
             switch (route.name) {
+              case "Attendance":
+                iconName = "save-outline";
+                break;
               case "Sync Inventory":
                 iconName = "sync-outline";
                 break;
               case "Inventory":
-                iconName = "cube-outline";
+                iconName = "clipboard-outline";
                 break;
               case "Profile":
                 iconName = "person-outline";
@@ -662,6 +1241,7 @@ const Inventory = () => {
       >
         <Tab.Screen name="Inventory" component={InventoryContent} />
         <Tab.Screen name="Sync Inventory" component={SyncScreen} />
+        <Tab.Screen name="Attendance" component={AttendanceScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
     </SafeAreaView>

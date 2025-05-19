@@ -416,7 +416,7 @@ export default function InventoryNextWeek() {
       }
 
       const saveRes = await fetch(
-        "http://192.168.50.55:3001/inventory/grouped",
+        "http://192.168.50.54:3001/inventory/grouped",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -427,7 +427,7 @@ export default function InventoryNextWeek() {
       if (!saveRes.ok) throw new Error("Failed to save inventory");
 
       if (previousWeekId) {
-        await fetch("http://192.168.50.55:3001/lock", {
+        await fetch("http://192.168.50.54:3001/lock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
