@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
+import { Picker } from "@react-native-picker/picker";
+import { useRouter } from "expo-router";
+import moment from "moment";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  Alert,
+  Keyboard,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Keyboard,
   TouchableWithoutFeedback,
+  View,
   ViewStyle,
-  TextStyle,
-  TextInputProps,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import moment from "moment";
+import DropDownPicker from "react-native-dropdown-picker";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import styles from "./Style";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert } from "react-native";
-import NetInfo from "@react-native-community/netinfo";
 
 interface PickerItem {
   label: string;
@@ -107,11 +107,11 @@ type GroupedInventory = {
   };
 };
 
-export interface OfflineInventoryItem {
-  data: GroupedInventory;
-  previousWeekId?: string;
-  isOffline?: boolean; // add this optional field if you want
-}
+// export interface OfflineInventoryItem {
+//   data: GroupedInventory;
+//   previousWeekId?: string;
+//   isOffline?: boolean; // add this optional field if you want
+// }
 
 const InventoryProcess = () => {
   const [email, setEmail] = useState("");
@@ -129,7 +129,11 @@ const InventoryProcess = () => {
 
   const [version, setVersion] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [open, setOpen] = useState(false);
+  const [selectedOutlet, setSelectedOutlet] = useState("");
+  const [outletOptions, setOutletOptions] = useState([
+    { label: "Select Branch", value: "" },
+  ]);
   const [weekOptions, setWeekOptions] = useState<PickerItem[]>([
     { label: "Select Week", value: "" },
   ]);
@@ -318,22 +322,39 @@ const InventoryProcess = () => {
     });
   }, [version]);
 
-  const [outletOptions, setOutletOptions] = useState([
-    { label: "Select Branch", value: "" },
-  ]);
-
   useEffect(() => {
     const loadOutlets = async () => {
-      const storedBranch = await AsyncStorage.getItem("outlet");
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          console.error("No auth token found");
+          return;
+        }
 
-      if (storedBranch) {
-        const outlets = storedBranch.split(",").map((outlet) => outlet.trim());
-        const options = outlets.map((outlet) => ({
-          label: outlet,
-          value: outlet,
-        }));
+        const response = await fetch(
+          "https://towi-react.onrender.com/user/outlets",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-        setOutletOptions([{ label: "Select Branch", value: "" }, ...options]);
+        if (response.ok) {
+          const outlets = await response.json();
+          const options = outlets.map((outlet: string) => ({
+            label: outlet,
+            value: outlet,
+          }));
+
+          setOutletOptions([{ label: "Select Branch", value: "" }, ...options]);
+        } else {
+          console.error("Failed to fetch outlets:", await response.text());
+        }
+      } catch (error) {
+        console.error("Failed to load outlets", error);
       }
     };
 
@@ -801,7 +822,7 @@ const InventoryProcess = () => {
   };
 
   const handleSubmit = async () => {
-    if (!merchandiser || !outlet || !weeksCovered || !month || !week) {
+    if (!merchandiser || !selectedOutlet || !weeksCovered || !month || !week) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
@@ -820,7 +841,7 @@ const InventoryProcess = () => {
       email,
       date,
       merchandiser,
-      outlet,
+      outlet: selectedOutlet,
       weeksCovered,
       month,
       week,
@@ -863,45 +884,48 @@ const InventoryProcess = () => {
 
     // Use previousWeekId from state or props if available
 
-    const saveOffline = async () => {
-      try {
-        const existing = await AsyncStorage.getItem("offlineInventories");
-        const offlineList: OfflineInventoryItem[] = existing
-          ? JSON.parse(existing)
-          : [];
+    // const saveOffline = async () => {
+    //   try {
+    //     const existing = await AsyncStorage.getItem("offlineInventories");
+    //     const offlineList: OfflineInventoryItem[] = existing
+    //       ? JSON.parse(existing)
+    //       : [];
 
-        offlineList.push({
-          data: groupedInventory,
-        });
+    //     offlineList.push({
+    //       data: groupedInventory,
+    //     });
 
-        await AsyncStorage.setItem(
-          "offlineInventories",
-          JSON.stringify(offlineList)
-        );
+    //     await AsyncStorage.setItem(
+    //       "offlineInventories",
+    //       JSON.stringify(offlineList)
+    //     );
 
-        Alert.alert(
-          "Saved Offline",
-          "No internet. Inventory will sync automatically later."
-        );
-        router.replace("/HomeScreen");
-      } catch (err) {
-        console.error("Failed to save locally:", err);
-        Alert.alert("Error", "Couldn't save inventory offline.");
-      }
-    };
+    //     Alert.alert(
+    //       "Saved Offline",
+    //       "No internet. Inventory will sync automatically later."
+    //     );
+    //     router.replace("/HomeScreen");
+    //   } catch (err) {
+    //     console.error("Failed to save locally:", err);
+    //     Alert.alert("Error", "Couldn't save inventory offline.");
+    //   }
+    // };
 
     try {
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
-        await saveOffline();
+        // await saveOffline();
         return;
       }
 
-      const res = await fetch("http://192.168.50.55:3001/inventory/grouped", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(groupedInventory),
-      });
+      const res = await fetch(
+        "https://towi-react.onrender.com/inventory/grouped",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(groupedInventory),
+        }
+      );
 
       if (!res.ok) throw new Error(await res.text());
 
@@ -915,7 +939,7 @@ const InventoryProcess = () => {
       }
     } catch (err) {
       if (err instanceof TypeError && err.message.includes("Network")) {
-        await saveOffline();
+        // await saveOffline();
       } else {
         console.error("❌ Error saving whole inventory:", err);
         Alert.alert("Error", "Failed to save inventory.");
@@ -963,11 +987,18 @@ const InventoryProcess = () => {
             style={{ height: 0, opacity: 0 }}
           />
 
-          <AndroidPicker
-            label="Branch / Outlet"
-            selectedValue={outlet}
-            onValueChange={(value) => setOutlet(value)}
+          <DropDownPicker
+            open={open}
+            value={selectedOutlet}
             items={outletOptions}
+            setOpen={setOpen}
+            setValue={setSelectedOutlet}
+            setItems={setOutletOptions}
+            searchable
+            placeholder="Select Branch"
+            // style={{ width: 407 }}
+            // dropDownContainerStyle={{ width: 407 }}
+            listMode="SCROLLVIEW"
           />
 
           <AndroidPicker
@@ -1198,6 +1229,17 @@ const InventoryProcess = () => {
                                       style={{ fontSize: 11, color: "black" }}
                                     />
                                   </Picker>
+                                  <Icon
+                                    name="arrow-drop-down"
+                                    size={24}
+                                    color="grey"
+                                    style={{
+                                      position: "absolute",
+                                      right: 10,
+                                      top: 13,
+                                      pointerEvents: "none", // ensures Picker underneath still responds
+                                    }}
+                                  />
                                 </View>
                               )}
 
@@ -1210,6 +1252,15 @@ const InventoryProcess = () => {
                                     height: 40,
                                     marginLeft: isBeginning ? 0 : 6,
                                     textAlign: "center",
+                                    backgroundColor:
+                                      availabilityValue === "Carried"
+                                        ? "#FFFFFF"
+                                        : "#f0f0f0", // light blue if carried, gray otherwise
+                                    borderColor:
+                                      availabilityValue === "Carried"
+                                        ? "#2c1c5c"
+                                        : "#ccc", // teal if carried
+                                    borderWidth: 1,
                                   },
                                 ]}
                                 keyboardType="numeric"
@@ -1298,6 +1349,7 @@ const InventoryProcess = () => {
                         {/* Quantity Field */}
                         <TextInput
                           placeholder="Qty"
+                          placeholderTextColor={"grey"}
                           style={[
                             styles.inputBox,
                             { flex: 1.5, height: 40, fontSize: 14 },

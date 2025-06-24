@@ -1,33 +1,29 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  FlatList,
-  ListRenderItem,
-  Alert,
-  TextInput,
-  Modal,
-  ActivityIndicator,
-  Button,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { useRouter } from "expo-router";
-import styles from "./Style";
-import moment from "moment";
-import Icon from "react-native-vector-icons/MaterialIcons";
-import { useAuth } from "./auth";
-import { ScrollView } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
-import { syncOfflineInventories } from "./offlineSync";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { Image } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import { useRouter } from "expo-router";
+import moment from "moment";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import { useAuth } from "./auth";
+import styles from "./Style";
 
 type SKUCarried = {
   sku: string;
@@ -80,48 +76,76 @@ export interface InventoryItem {
   isOffline?: boolean;
 }
 
-export interface OfflineInventoryItem {
-  data: InventoryItem;
-  previousWeekId?: string;
-}
+// export interface OfflineInventoryItem {
+//   data: InventoryItem;
+//   previousWeekId?: string;
+// }
+
+type TimeLog = {
+  outlet: string;
+  timeIn: string;
+  timeOut?: string | null;
+  addressTimeIn?: string | null;
+  addressTimeOut?: string | null;
+  timeInSelfieUri?: string | null;
+  timeOutSelfieUri?: string | null;
+};
+
+type AttendanceRecord = {
+  date: string;
+  timeLogs: TimeLog[];
+};
 
 const AttendanceScreen = () => {
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [attendanceHistory, setAttendanceHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [currentDate, setCurrentDate] = useState("");
-  const [hasTimedIn, setHasTimedIn] = useState(false);
-  const [hasTimedOut, setHasTimedOut] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState("");
   const [outletOptions, setOutletOptions] = useState([
     { label: "Select Branch", value: "" },
   ]);
-  const [email, setUserEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
-  const [timeInTimestamp, setTimeInTimestamp] = useState<string | null>(null);
-  const [timeOutTimestamp, setTimeOutTimestamp] = useState<string | null>(null);
-  const [addressTimeIn, setAddressTimeIn] = useState<string | null>(null);
-  const [addressTimeOut, setAddressTimeOut] = useState<string | null>(null);
-  const [timeInSelfieUri, setTimeInSelfieUri] = useState<string | null>(null);
-  const [timeOutSelfieUri, setTimeOutSelfieUri] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSelfieUri, setSelectedSelfieUri] = useState<string | null>(
     null
   );
+  const [isLoadingTimeIn, setIsLoadingTimeIn] = useState(false);
+  const [isLoadingTimeOut, setIsLoadingTimeOut] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [attendanceData, setAttendanceData] = useState<{
+    hasTimedIn: boolean;
+    hasTimedOut: boolean;
+    timeInTimestamp: string | null;
+    timeOutTimestamp: string | null;
+    addressTimeIn: string | null;
+    addressTimeOut: string | null;
+    timeInSelfieUri: string | null;
+    timeOutSelfieUri: string | null;
+  }>({
+    hasTimedIn: false,
+    hasTimedOut: false,
+    timeInTimestamp: null,
+    timeOutTimestamp: null,
+    addressTimeIn: null,
+    addressTimeOut: null,
+    timeInSelfieUri: null,
+    timeOutSelfieUri: null,
+  });
 
+  // TIME and DAY STAMP
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
-
-      // Format date: e.g., May 19, 2025
       const options = {
         year: "numeric" as const,
         month: "long" as const,
         day: "numeric" as const,
       };
-
       const formattedDate = now.toLocaleDateString(undefined, options);
-
-      // Format time: e.g., 2:45 PM
       const hours = now.getHours() % 12 || 12;
       const minutes = now.getMinutes().toString().padStart(2, "0");
       const ampm = now.getHours() >= 12 ? "PM" : "AM";
@@ -131,16 +155,28 @@ const AttendanceScreen = () => {
       setCurrentTime(formattedTime);
     };
 
-    updateDateTime(); // Initial call
-    const interval = setInterval(updateDateTime, 60000); // Update every 60 seconds
-
-    return () => clearInterval(interval); // Cleanup on unmount
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 60000);
+    return () => clearInterval(interval);
   }, []);
+
+  //TIME AND DAY FOR TIME STAMP
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString("en-PH", {
+      weekday: "long", // e.g., "Friday"
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true, // Use 12-hour format with AM/PM
+    });
+  };
 
   const viewSelfie = (uri: string) => {
     setSelectedSelfieUri(uri);
     setModalVisible(true);
   };
+
   const [location, setLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -179,31 +215,78 @@ const AttendanceScreen = () => {
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
       });
-
-      // Remove reverse geocoding here — now handled in Time In/Out functions
     })();
   }, []);
+
+  const fetchAttendanceHistory = async () => {
+    if (!email || !selectedOutlet) {
+      Alert.alert("Please select a branch first.");
+      return;
+    }
+
+    setHistoryLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://towi-react.onrender.com/attendance/history?email=${email}&outlet=${selectedOutlet}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch attendance history");
+      }
+
+      const data = await response.json();
+      setAttendanceHistory(data);
+      setHistoryModalVisible(true);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error.message || "Failed to fetch history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadOutlets = async () => {
       try {
-        const storedBranch = await AsyncStorage.getItem("outlet");
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          console.error("No auth token found");
+          return;
+        }
 
-        if (storedBranch) {
-          const outlets = storedBranch
-            .split(",")
-            .map((outlet) => outlet.trim());
-          const options = outlets.map((outlet) => ({
+        const response = await fetch(
+          "https://towi-react.onrender.com/user/outlets",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const outlets = await response.json();
+          const options = outlets.map((outlet: string) => ({
             label: outlet,
             value: outlet,
           }));
 
+          // Load saved outlet
+          const savedOutlet = await AsyncStorage.getItem("outlet");
+
           setOutletOptions([{ label: "Select Branch", value: "" }, ...options]);
 
-          // Optional: set default selected outlet to first actual outlet
-          if (options.length > 0) {
-            setSelectedOutlet(options[0].value);
+          if (savedOutlet) {
+            setSelectedOutlet(savedOutlet);
           }
+        } else {
+          console.error("Failed to fetch outlets:", await response.text());
         }
       } catch (error) {
         console.error("Failed to load outlets", error);
@@ -213,138 +296,108 @@ const AttendanceScreen = () => {
     loadOutlets();
   }, []);
 
-  // Request location permission & get coordinates
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission to access location was denied");
-        return;
+  const fetchEmail = async () => {
+    try {
+      const storedEmail = await AsyncStorage.getItem("userEmail");
+      if (storedEmail) {
+        setEmail(storedEmail);
+      } else {
+        Alert.alert("Error", "User email not found. Please log in again.");
       }
-
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-      });
-    })();
-  }, []);
-
-  useEffect(() => {
-    const getEmail = async () => {
-      const email = await AsyncStorage.getItem("email");
-      if (email) setUserEmail(email);
-    };
-    getEmail();
-  }, []);
-
-  const loadAttendanceStatusForOutlet = async (outlet: string) => {
-    const today = new Date().toISOString().split("T")[0];
-
-    // Reset everything if no outlet is selected
-    if (!outlet) {
-      setHasTimedIn(false);
-      setHasTimedOut(false);
-      setTimeInTimestamp(null);
-      setTimeOutTimestamp(null);
-      setAddressTimeIn(null);
-      setAddressTimeOut(null);
-      setTimeInSelfieUri(null);
-      setTimeOutSelfieUri(null);
-      return;
-    }
-
-    // Keys
-    const hasTimedInKey = `hasTimedIn_${outlet}`;
-    const timeInDateKey = `timeInDate_${outlet}`;
-    const timeInTimestampKey = `timeInTimestamp_${outlet}`;
-    const addressTimeInKey = `addressTimeIn_${outlet}`;
-    const timeInSelfieUriKey = `timeInSelfieUri_${outlet}`;
-    const hasTimedOutKey = `hasTimedOut_${outlet}`;
-    const timeOutDateKey = `timeOutDate_${outlet}`;
-    const timeOutTimestampKey = `timeOutTimestamp_${outlet}`;
-    const addressTimeOutKey = `addressTimeOut_${outlet}`;
-    const timeOutSelfieUriKey = `timeOutSelfieUri_${outlet}`;
-
-    // Load & Validate Time In
-    const storedTimeIn = await AsyncStorage.getItem(hasTimedInKey);
-    const storedTimeInDate = await AsyncStorage.getItem(timeInDateKey);
-
-    if (storedTimeIn === "true" && storedTimeInDate === today) {
-      setHasTimedIn(true);
-      setTimeInTimestamp(await AsyncStorage.getItem(timeInTimestampKey));
-      setAddressTimeIn(await AsyncStorage.getItem(addressTimeInKey));
-      setTimeInSelfieUri(await AsyncStorage.getItem(timeInSelfieUriKey));
-    } else {
-      setHasTimedIn(false);
-      setTimeInTimestamp(null);
-      setAddressTimeIn(null);
-      setTimeInSelfieUri(null);
-      await AsyncStorage.multiRemove([
-        hasTimedInKey,
-        timeInDateKey,
-        timeInTimestampKey,
-        addressTimeInKey,
-        timeInSelfieUriKey,
-      ]);
-    }
-
-    // Load & Validate Time Out
-    const storedTimeOut = await AsyncStorage.getItem(hasTimedOutKey);
-    const storedTimeOutDate = await AsyncStorage.getItem(timeOutDateKey);
-
-    if (storedTimeOut === "true" && storedTimeOutDate === today) {
-      setHasTimedOut(true);
-      setTimeOutTimestamp(await AsyncStorage.getItem(timeOutTimestampKey));
-      setAddressTimeOut(await AsyncStorage.getItem(addressTimeOutKey));
-      setTimeOutSelfieUri(await AsyncStorage.getItem(timeOutSelfieUriKey));
-    } else {
-      setHasTimedOut(false);
-      setTimeOutTimestamp(null);
-      setAddressTimeOut(null);
-      setTimeOutSelfieUri(null);
-      await AsyncStorage.multiRemove([
-        hasTimedOutKey,
-        timeOutDateKey,
-        timeOutTimestampKey,
-        addressTimeOutKey,
-        timeOutSelfieUriKey,
-      ]);
+    } catch (error) {
+      console.error("Failed to fetch email from storage:", error);
+      Alert.alert("Error", "Failed to fetch user email.");
     }
   };
 
-  // Load attendance data when selected outlet changes
   useEffect(() => {
-    loadAttendanceStatusForOutlet(selectedOutlet);
-  }, [selectedOutlet]);
+    fetchEmail();
+  }, []);
+
+  const fetchAttendanceData = async (outlet: string) => {
+    if (!outlet || !email) return;
+
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      // Encode the parameters to handle special characters like &
+      const encodedEmail = encodeURIComponent(email);
+      const encodedOutlet = encodeURIComponent(outlet);
+      const response = await fetch(
+        `https://towi-react.onrender.com/attendance/status?email=${encodedEmail}&outlet=${encodedOutlet}&date=${today}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttendanceData({
+          hasTimedIn: data.hasTimedIn || false,
+          hasTimedOut: data.hasTimedOut || false,
+          timeInTimestamp: data.timeInTimestamp || null,
+          timeOutTimestamp: data.timeOutTimestamp || null,
+          addressTimeIn: data.addressTimeIn || null,
+          addressTimeOut: data.addressTimeOut || null,
+          timeInSelfieUri: data.timeInSelfieUri || null,
+          timeOutSelfieUri: data.timeOutSelfieUri || null,
+        });
+      } else {
+        // Reset if no data found
+        setAttendanceData({
+          hasTimedIn: false,
+          hasTimedOut: false,
+          timeInTimestamp: null,
+          timeOutTimestamp: null,
+          addressTimeIn: null,
+          addressTimeOut: null,
+          timeInSelfieUri: null,
+          timeOutSelfieUri: null,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch attendance data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAttendanceData(selectedOutlet);
+  }, [selectedOutlet, email]);
 
   const handleTimeIn = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Camera access is required to take a selfie.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 1,
-      cameraType: ImagePicker.CameraType.front,
-    });
-
-    if (result.canceled || !result.assets?.length) {
-      Alert.alert("Selfie is required to Time In.");
-      return;
-    }
-
+    setIsLoadingTimeIn(true);
     try {
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Camera access is required to take a selfie.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+        cameraType: ImagePicker.CameraType.front,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        Alert.alert("Selfie is required to Time In.");
+        return;
+      }
+
       const uri = result.assets[0].uri;
       setSelfieUri(uri);
-      setTimeInSelfieUri(uri);
+      const timestamp = Date.now();
+      const fileName = `Time_In_${email}_${timestamp}.jpg`;
 
-      const fileName = `Time_In_(${email}).jpg`;
       const presignRes = await fetch(
-        "http://192.168.50.54:3001/save-attendance-images",
+        "https://towi-react.onrender.com/save-attendance-images",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -370,7 +423,7 @@ const AttendanceScreen = () => {
       const selfieUrl = url.split("?")[0];
       const now = new Date();
       const date = now.toISOString().split("T")[0];
-      const timeIn = now.toLocaleTimeString("en-US", {
+      const timeIn = now.toLocaleTimeString("en-PH", {
         hour: "numeric",
         minute: "numeric",
         hour12: true,
@@ -382,12 +435,10 @@ const AttendanceScreen = () => {
           location.latitude,
           location.longitude
         );
-        setAddressTimeIn(resolvedAddress);
       }
 
-      // Save attendance to backend
       const saveRes = await fetch(
-        "http://192.168.50.54:3001/attendance/time-in",
+        "https://towi-react.onrender.com/attendance/time-in",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -403,25 +454,13 @@ const AttendanceScreen = () => {
         }
       );
 
-      if (!saveRes.ok) throw new Error("Failed to save time-in data");
-
-      setHasTimedIn(true);
-      setTimeInTimestamp(`${date} ${timeIn}`);
-
-      const hasTimedInKey = `hasTimedIn_${selectedOutlet}`;
-      const timeInDateKey = `timeInDate_${selectedOutlet}`;
-      const timeInTimestampKey = `timeInTimestamp_${selectedOutlet}`;
-      const addressTimeInKey = `addressTimeIn_${selectedOutlet}`;
-      const timeInSelfieUriKey = `timeInSelfieUri_${selectedOutlet}`;
-      await AsyncStorage.setItem(timeInSelfieUriKey, uri);
-      await AsyncStorage.setItem(hasTimedInKey, "true");
-      await AsyncStorage.setItem(timeInDateKey, date);
-      await AsyncStorage.setItem(timeInTimestampKey, `${date} ${timeIn}`);
-
-      if (resolvedAddress) {
-        await AsyncStorage.setItem(addressTimeInKey, resolvedAddress);
+      if (!saveRes.ok) {
+        const errorText = await saveRes.text();
+        console.error("Time-in backend response:", errorText);
+        throw new Error("Failed to save time-in data");
       }
 
+      await fetchAttendanceData(selectedOutlet);
       Alert.alert("Time In recorded!");
     } catch (error: unknown) {
       console.error(error);
@@ -429,34 +468,39 @@ const AttendanceScreen = () => {
         "Failed to upload or save time-in.",
         error instanceof Error ? error.message : String(error)
       );
+    } finally {
+      setIsLoadingTimeIn(false);
     }
   };
 
   const handleTimeOut = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Camera access is required to take a selfie.");
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false,
-      quality: 1,
-      cameraType: ImagePicker.CameraType.front,
-    });
-
-    if (result.canceled || !result.assets?.length) {
-      Alert.alert("Selfie is required to Time Out.");
-      return;
-    }
-
+    setIsLoadingTimeOut(true);
     try {
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Camera access is required to take a selfie.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+        cameraType: ImagePicker.CameraType.front,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        Alert.alert("Selfie is required to Time Out.");
+        return;
+      }
+
       const uri = result.assets[0].uri;
-      const fileName = `Time_Out_(${email}).jpg`;
+      const timestamp = Date.now();
+      const fileName = `Time_Out_${email}_${timestamp}.jpg`;
 
       const presignRes = await fetch(
-        "http://192.168.50.54:3001/save-attendance-images",
+        "https://towi-react.onrender.com/save-attendance-images",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -465,7 +509,6 @@ const AttendanceScreen = () => {
       );
 
       if (!presignRes.ok) throw new Error("Failed to get upload URL");
-
       const { url } = await presignRes.json();
 
       const imageBlob = await fetch(uri).then((r) => r.blob());
@@ -483,7 +526,7 @@ const AttendanceScreen = () => {
       const timeOutSelfieUrl = url.split("?")[0];
       const now = new Date();
       const date = now.toISOString().split("T")[0];
-      const timeOut = now.toLocaleTimeString("en-US", {
+      const timeOut = now.toLocaleTimeString("en-PH", {
         hour: "numeric",
         minute: "numeric",
         hour12: true,
@@ -495,12 +538,10 @@ const AttendanceScreen = () => {
           location.latitude,
           location.longitude
         );
-        setAddressTimeOut(resolvedAddress);
       }
 
-      // Save to backend
       const saveRes = await fetch(
-        "http://192.168.50.54:3001/attendance/time-out",
+        "https://towi-react.onrender.com/attendance/time-out",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -518,23 +559,7 @@ const AttendanceScreen = () => {
 
       if (!saveRes.ok) throw new Error("Failed to save time-out data");
 
-      setHasTimedOut(true);
-      setTimeOutTimestamp(`${date} ${timeOut}`);
-      setTimeOutSelfieUri(uri);
-      const hasTimedOutKey = `hasTimedOut_${selectedOutlet}`;
-      const timeOutDateKey = `timeOutDate_${selectedOutlet}`;
-      const timeOutTimestampKey = `timeOutTimestamp_${selectedOutlet}`;
-      const addressTimeOutKey = `addressTimeOut_${selectedOutlet}`;
-      const timeOutSelfieUriKey = `timeOutSelfieUri_${selectedOutlet}`;
-      await AsyncStorage.setItem(timeOutSelfieUriKey, uri);
-      await AsyncStorage.setItem(hasTimedOutKey, "true");
-      await AsyncStorage.setItem(timeOutDateKey, date);
-      await AsyncStorage.setItem(timeOutTimestampKey, `${date} ${timeOut}`);
-
-      if (resolvedAddress) {
-        await AsyncStorage.setItem(addressTimeOutKey, resolvedAddress);
-      }
-
+      await fetchAttendanceData(selectedOutlet);
       Alert.alert("Time Out recorded!");
     } catch (error: unknown) {
       console.error(error);
@@ -542,137 +567,333 @@ const AttendanceScreen = () => {
         "Failed to upload or save time-out.",
         error instanceof Error ? error.message : String(error)
       );
+    } finally {
+      setIsLoadingTimeOut(false);
     }
   };
 
   return (
-    <View style={styles.safeArea}>
+    <ScrollView style={styles.safeArea}>
       <View style={styles.appBarAttendance}>
         <Text style={styles.appBarTitleAttendance}>ATTENDANCE</Text>
       </View>
 
-      <View style={styles.containerAttendance}>
-        <View style={{ alignItems: "center", marginBottom: 20 }}>
-          <Text style={{ fontSize: 24, fontWeight: "600" }}>{currentDate}</Text>
-          <Text style={{ fontSize: 56, fontWeight: "bold", marginTop: 5 }}>
-            {currentTime}
-          </Text>
-        </View>
+      {loading && <ActivityIndicator size="large" color="#0aafeb" />}
 
-        <View style={styles.pickerWrapper}>
-          <DropDownPicker
-            open={open}
-            value={selectedOutlet}
-            items={outletOptions}
-            setOpen={setOpen}
-            setValue={setSelectedOutlet}
-            setItems={setOutletOptions}
-            searchable={true}
-            placeholder="Select Branch"
-            disabled={hasTimedIn && !hasTimedOut} // disable after TIME IN, enable after TIME OUT
-            style={{ width: 250 }}
-            dropDownContainerStyle={{ width: 250 }}
-          />
-        </View>
+      {/* DATE & TIME */}
+      <View style={{ alignItems: "center", marginBottom: 30 }}>
+        <Text style={{ fontSize: 22, fontWeight: "500", color: "#333" }}>
+          {currentDate}
+        </Text>
+        <Text
+          style={{
+            fontSize: 48,
+            fontWeight: "bold",
+            color: "black",
+            marginTop: 5,
+          }}
+        >
+          {currentTime}
+        </Text>
+      </View>
 
-        {/* TIME IN */}
-        <Text style={styles.sectionLabel}>TIME IN</Text>
+      {/* BRANCH DROPDOWN */}
+      <DropDownPicker
+        open={open}
+        value={selectedOutlet}
+        items={outletOptions}
+        setOpen={setOpen}
+        setValue={setSelectedOutlet}
+        setItems={setOutletOptions}
+        searchable={true}
+        placeholder="Select Branch"
+        disabled={attendanceData.hasTimedIn && !attendanceData.hasTimedOut}
+        onChangeValue={(value) => {
+          if (value) {
+            AsyncStorage.setItem("outlet", value);
+          }
+        }}
+        listMode="SCROLLVIEW"
+        style={{
+          marginBottom: 30,
+          borderRadius: 10,
+          borderColor: "#ccc",
+          width: "100%",
+        }}
+        dropDownContainerStyle={{ borderRadius: 10, width: "100%" }}
+      />
 
-        <View style={styles.buttonContainer}>
-          <Button
-            title="TIME IN"
-            onPress={handleTimeIn}
-            disabled={hasTimedIn}
-            color={hasTimedIn ? "gray" : "green"}
-          />
-        </View>
+      {/* TIME IN SECTION */}
+      <Text style={styles.sectionLabel}>TIME IN</Text>
 
-        {/* 👇 View Time In Selfie Icon */}
-        {timeInSelfieUri && (
-          <TouchableOpacity onPress={() => viewSelfie(timeInSelfieUri)}>
+      <TouchableOpacity
+        onPress={handleTimeIn}
+        disabled={attendanceData.hasTimedIn || isLoadingTimeIn}
+        style={[
+          styles.customButton,
+          {
+            backgroundColor: attendanceData.hasTimedIn ? "#ccc" : "#4caf50",
+          },
+        ]}
+      >
+        {isLoadingTimeIn ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>TIME IN</Text>
+        )}
+      </TouchableOpacity>
+
+      <View style={{ alignItems: "center", marginBottom: 30 }}>
+        {attendanceData.timeInSelfieUri && (
+          <TouchableOpacity
+            onPress={() => viewSelfie(attendanceData.timeInSelfieUri!)}
+          >
             <View style={styles.iconContainer}>
-              <Ionicons name="eye" size={24} color="blue" />
+              <Ionicons name="eye" size={24} color="#2c1c5c" />
               <Text style={styles.viewText}>View Time In Selfie</Text>
             </View>
           </TouchableOpacity>
         )}
 
-        {timeInTimestamp && (
-          <Text style={styles.timestamp}> {timeInTimestamp}</Text>
+        {attendanceData.timeInTimestamp && (
+          <Text style={styles.timestamp}>
+            {formatTimestamp(attendanceData.timeInTimestamp)}
+          </Text>
         )}
 
-        {addressTimeIn && (
-          <Text style={styles.timestamp}> {addressTimeIn}</Text>
+        {attendanceData.addressTimeIn && (
+          <Text style={styles.timestamp}>{attendanceData.addressTimeIn}</Text>
         )}
+      </View>
+      {/* TIME OUT SECTION */}
+      <Text style={[styles.sectionLabel, { marginTop: 30 }]}>TIME OUT</Text>
 
-        {/* TIME OUT */}
-        <Text style={styles.sectionLabel}>TIME OUT</Text>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            title="TIME OUT"
-            onPress={handleTimeOut}
-            disabled={!hasTimedIn || hasTimedOut}
-            color={!hasTimedIn || hasTimedOut ? "gray" : "red"}
-          />
-        </View>
-
-        {/* 👇 View Time Out Selfie Icon */}
-        {timeOutSelfieUri && (
-          <TouchableOpacity onPress={() => viewSelfie(timeOutSelfieUri)}>
+      <TouchableOpacity
+        onPress={handleTimeOut}
+        disabled={
+          !attendanceData.hasTimedIn ||
+          attendanceData.hasTimedOut ||
+          isLoadingTimeOut
+        }
+        style={[
+          styles.customButton,
+          {
+            backgroundColor:
+              !attendanceData.hasTimedIn || attendanceData.hasTimedOut
+                ? "#ccc"
+                : "#eb3b5a",
+          },
+        ]}
+      >
+        {isLoadingTimeOut ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>TIME OUT</Text>
+        )}
+      </TouchableOpacity>
+      <View style={{ alignItems: "center", marginBottom: 30 }}>
+        {attendanceData.timeOutSelfieUri && (
+          <TouchableOpacity
+            onPress={() => viewSelfie(attendanceData.timeOutSelfieUri!)}
+          >
             <View style={styles.iconContainer}>
-              <Ionicons name="eye" size={24} color="blue" />
+              <Ionicons name="eye" size={24} color="#2c1c5c" />
               <Text style={styles.viewText}>View Time Out Selfie</Text>
             </View>
           </TouchableOpacity>
         )}
 
-        {timeOutTimestamp && (
-          <Text style={styles.timestamp}> {timeOutTimestamp}</Text>
+        {attendanceData.timeOutTimestamp && (
+          <Text style={styles.timestamp}>
+            {formatTimestamp(attendanceData.timeOutTimestamp)}
+          </Text>
         )}
 
-        {addressTimeOut && (
-          <Text style={styles.timestamp}> {addressTimeOut}</Text>
-        )}
-
-        {/* 📷 Modal to View Selfie Image */}
-        {selectedSelfieUri && (
-          <Modal visible={modalVisible} transparent={true} animationType="fade">
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Image
-                  source={{ uri: selectedSelfieUri }}
-                  style={styles.modalImage}
-                  resizeMode="contain"
-                />
-                <Button title="Close" onPress={() => setModalVisible(false)} />
-              </View>
-            </View>
-          </Modal>
+        {attendanceData.addressTimeOut && (
+          <Text style={styles.timestamp}>{attendanceData.addressTimeOut}</Text>
         )}
       </View>
-    </View>
+      {/* SELFIE MODAL */}
+      {selectedSelfieUri && (
+        <Modal visible={modalVisible} transparent animationType="fade">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Image
+                source={{ uri: selectedSelfieUri }}
+                style={styles.modalImage}
+                resizeMode="contain"
+              />
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Text style={{ color: "#fff" }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ATTENDANCE HISTORY BUTTON */}
+
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: "#357a38", marginTop: 20 }]}
+        onPress={fetchAttendanceHistory}
+        disabled={loading || historyLoading}
+      >
+        <Text style={styles.buttonText}>
+          {historyLoading ? "Loading..." : "View Attendance History"}
+        </Text>
+      </TouchableOpacity>
+
+      {/*  <View style={styles.appBarAttendance}>
+        <Text style={styles.appBarTitleAttendance}>ATTENDANCE</Text>
+      </View>
+       */}
+
+      {/* ATTENDANCE HISTORY MODAL */}
+
+      <Modal
+        visible={historyModalVisible}
+        animationType="slide"
+        onRequestClose={() => setHistoryModalVisible(false)}
+      >
+        <View style={styles.appBarAttendance}>
+          <Text style={styles.appBarTitleAttendance}>ATTENDANCE HISTORY</Text>
+        </View>
+
+        <View style={{ flex: 1, backgroundColor: "#fff" }}>
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <TouchableOpacity
+              onPress={() => setHistoryModalVisible(false)}
+              style={{ marginBottom: 15 }}
+            >
+              <Text style={{ color: "blue" }}>Close</Text>
+            </TouchableOpacity>
+
+            {attendanceHistory.length === 0 ? (
+              <Text>No attendance records found.</Text>
+            ) : (
+              attendanceHistory.map(
+                (record: AttendanceRecord, index: number) => {
+                  const dateObj = new Date(record.date);
+                  const formattedDate = dateObj.toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  });
+
+                  const formatTimestamp = (timestamp?: string | null) => {
+                    if (!timestamp) return "N/A";
+
+                    const date = new Date(timestamp);
+
+                    // Convert to Philippine Time (Asia/Manila) and format nicely with weekday, 12-hour time
+                    return date.toLocaleString("en-PH", {
+                      timeZone: "Asia/Manila",
+                      weekday: "long", // e.g. Friday
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true, // 12-hour format with AM/PM
+                    });
+                  };
+
+                  return (
+                    <View
+                      key={index}
+                      style={{
+                        marginBottom: 15,
+                        padding: 10,
+                        borderWidth: 1,
+                        borderColor: "#ccc",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text>Date: {formattedDate}</Text>
+
+                      {record.timeLogs.map((log: TimeLog, idx: number) => (
+                        <View
+                          key={idx}
+                          style={{
+                            marginTop: 10,
+                            padding: 8,
+                            borderWidth: 1,
+                            borderColor: "#ddd",
+                            borderRadius: 6,
+                            backgroundColor: "#f9f9f9",
+                          }}
+                        >
+                          <Text style={{ fontWeight: "bold", marginBottom: 6 }}>
+                            Outlet: {log.outlet}
+                          </Text>
+
+                          <Text>Time In: {formatTimestamp(log.timeIn)}</Text>
+                          <Text>
+                            Time In Location: {log.addressTimeIn || "N/A"}
+                          </Text>
+                          {log.timeInSelfieUri ? (
+                            <TouchableOpacity
+                              onPress={() => {
+                                setSelectedSelfieUri(log.timeInSelfieUri!);
+                                setModalVisible(true);
+                              }}
+                            >
+                              <Text style={{ color: "blue" }}>
+                                View Time In Selfie
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null}
+
+                          <View style={{ height: 15 }} />
+
+                          <Text>Time Out: {formatTimestamp(log.timeOut)}</Text>
+                          <Text>
+                            Time Out Location: {log.addressTimeOut || "N/A"}
+                          </Text>
+                          {log.timeOutSelfieUri ? (
+                            <TouchableOpacity
+                              onPress={() => {
+                                setSelectedSelfieUri(log.timeOutSelfieUri!);
+                                setModalVisible(true);
+                              }}
+                            >
+                              <Text style={{ color: "blue" }}>
+                                View Time Out Selfie
+                              </Text>
+                            </TouchableOpacity>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+                  );
+                }
+              )
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 };
 
-const SyncScreen = () => {
-  const handleSync = async () => {
-    try {
-      await syncOfflineInventories(); // Your utility to send data to backend
-      Alert.alert("Success", "All offline inventories synced.");
-    } catch (error) {
-      console.error("Sync error:", error);
-      Alert.alert("Error", "Failed to sync offline inventories.");
-    }
-  };
+// const SyncScreen = () => {
+//   const handleSync = async () => {
+//     try {
+//       await syncOfflineInventories(); // Your utility to send data to backend
+//       Alert.alert("Success", "All offline inventories synced.");
+//     } catch (error) {
+//       console.error("Sync error:", error);
+//       Alert.alert("Error", "Failed to sync offline inventories.");
+//     }
+//   };
 
-  return (
-    <View style={styles.center}>
-      <Text style={styles.title}>TAP TO SYNCHRONIZE</Text>
-      <Button title="Sync Now" onPress={handleSync} />
-    </View>
-  );
-};
+//   return (
+//     <View style={styles.center}>
+//       <Text style={styles.title}>TAP TO SYNCHRONIZE</Text>
+//       <Button title="Sync Now" onPress={handleSync} />
+//     </View>
+//   );
+// };
 
 const ProfileScreen = () => {
   const { userToken, signOut } = useAuth();
@@ -681,31 +902,12 @@ const ProfileScreen = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!userToken) {
-        setLoading(false);
-        return;
-      }
-
+    const loadProfile = async () => {
       try {
-        if (userToken === "offline-token") {
-          // Offline login: Load from AsyncStorage
-          const storedUser = await AsyncStorage.getItem("user");
-          if (!storedUser) throw new Error("No stored user data found");
-          const parsedUser = JSON.parse(storedUser);
-          setUserData(parsedUser);
-        } else {
-          // Online login: Fetch from API
-          const response = await fetch("http://192.168.50.54:3001/profile", {
-            headers: {
-              Authorization: `Bearer ${userToken}`,
-            },
-          });
-
-          if (!response.ok) throw new Error("Failed to fetch profile");
-          const data = await response.json();
-          setUserData(data);
-        }
+        const storedUser = await AsyncStorage.getItem("user");
+        if (!storedUser) throw new Error("No stored user data found");
+        const parsedUser = JSON.parse(storedUser);
+        setUserData(parsedUser);
       } catch (error) {
         Alert.alert("Error", (error as Error).message);
       } finally {
@@ -713,8 +915,8 @@ const ProfileScreen = () => {
       }
     };
 
-    fetchProfile();
-  }, [userToken]);
+    loadProfile();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
@@ -767,13 +969,6 @@ const ProfileScreen = () => {
           <Text style={styles.label}>Email</Text>
           <TextInput
             value={userData.email}
-            editable={false}
-            style={styles.input}
-          />
-
-          <Text style={styles.label}>Contact Number</Text>
-          <TextInput
-            value={userData.contactNumber || ""}
             editable={false}
             style={styles.input}
           />
@@ -989,14 +1184,14 @@ const InventoryCard: React.FC<{ item: InventoryItem }> = ({ item }) => {
   return (
     <TouchableOpacity
       onPress={() => {
-        if (!item.isOffline) {
-          setExpanded(!expanded);
-        } else {
-          Alert.alert(
-            "Sync Required",
-            "Please sync this inventory to view details."
-          );
-        }
+        // if (!item.isOffline) {
+        //   setExpanded(!expanded);
+        // } else {
+        //   Alert.alert(
+        //     "Sync Required",
+        //     "Please sync this inventory to view details."
+        //   );
+        // }
       }}
       style={[
         styles.tileContainer,
@@ -1080,7 +1275,7 @@ const InventoryContent = () => {
 
       if (netState.isConnected) {
         const res = await fetch(
-          `http://192.168.50.54:3001/inventoryHistory?email=${encodeURIComponent(
+          `https://towi-react.onrender.com/inventoryHistory?email=${encodeURIComponent(
             userEmail
           )}`
         );
@@ -1106,19 +1301,19 @@ const InventoryContent = () => {
         }
       }
 
-      // Load offline-only inventories, stored as OfflineInventoryItem { data, previousWeekId }
-      const offlineRaw = await AsyncStorage.getItem("offlineInventories");
-      const offlineList: OfflineInventoryItem[] = offlineRaw
-        ? JSON.parse(offlineRaw)
-        : [];
+      // // Load offline-only inventories, stored as OfflineInventoryItem { data, previousWeekId }
+      // const offlineRaw = await AsyncStorage.getItem("offlineInventories");
+      // const offlineList: OfflineInventoryItem[] = offlineRaw
+      //   ? JSON.parse(offlineRaw)
+      //   : [];
 
-      // Filter offline inventories where data.email matches userEmail
-      const userOffline = offlineList
-        .filter((inv) => inv.data?.email === userEmail)
-        .map((inv) => ({ ...inv.data, isOffline: true }));
+      // // Filter offline inventories where data.email matches userEmail
+      // const userOffline = offlineList
+      //   .filter((inv) => inv.data?.email === userEmail)
+      //   .map((inv) => ({ ...inv.data, isOffline: true }));
 
       // Combine online + offline and sort by date descending
-      const fullList = [...combinedData, ...userOffline].sort(
+      const fullList = [...combinedData].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
@@ -1145,7 +1340,7 @@ const InventoryContent = () => {
   useEffect(() => {
     const fetchUserEmail = async () => {
       try {
-        const email = await AsyncStorage.getItem("email");
+        const email = await AsyncStorage.getItem("userEmail");
         if (email) {
           setUserEmail(email);
           console.log("📥 userEmail retrieved:", email);
@@ -1240,7 +1435,7 @@ const Inventory = () => {
         })}
       >
         <Tab.Screen name="Inventory" component={InventoryContent} />
-        <Tab.Screen name="Sync Inventory" component={SyncScreen} />
+        {/* <Tab.Screen name="Sync Inventory" component={SyncScreen} /> */}
         <Tab.Screen name="Attendance" component={AttendanceScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
