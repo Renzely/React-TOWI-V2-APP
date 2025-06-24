@@ -1,5 +1,4 @@
 import { StyleSheet } from "react-native";
-import { Platform } from "react-native";
 
 //LOGIN SCREEN DESIGN
 
@@ -412,6 +411,22 @@ const loginStyles = StyleSheet.create({
   },
 
   // ATTENDANCE
+
+  customButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  closeButton: {
+    backgroundColor: "#357a38",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 15,
+    width: "100%",
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "#f2f2f2",

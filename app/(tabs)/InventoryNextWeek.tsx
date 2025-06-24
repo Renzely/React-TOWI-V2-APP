@@ -1,21 +1,21 @@
+import NetInfo from "@react-native-community/netinfo";
+import { Picker } from "@react-native-picker/picker";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import moment from "moment";
 import React, { useEffect, useState } from "react";
 import {
-  View,
+  Alert,
+  Keyboard,
+  ScrollView,
   Text,
   TextInput,
-  ScrollView,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Keyboard,
+  View,
   ViewStyle,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Picker } from "@react-native-picker/picker";
-import moment from "moment";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import styles from "./Style";
-import { Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import NetInfo from "@react-native-community/netinfo";
 
 interface PickerItem {
   label: string;
@@ -385,38 +385,38 @@ export default function InventoryNextWeek() {
       });
     });
 
-    const saveOffline = async () => {
-      try {
-        const existing = await AsyncStorage.getItem("offlineInventories");
-        const offlineList = existing ? JSON.parse(existing) : [];
+    // const saveOffline = async () => {
+    //   try {
+    //     const existing = await AsyncStorage.getItem("offlineInventories");
+    //     const offlineList = existing ? JSON.parse(existing) : [];
 
-        offlineList.push({ data: groupedInventory, previousWeekId }); // <<<< THIS
+    //     offlineList.push({ data: groupedInventory, previousWeekId }); // <<<< THIS
 
-        await AsyncStorage.setItem(
-          "offlineInventories",
-          JSON.stringify(offlineList)
-        );
+    //     await AsyncStorage.setItem(
+    //       "offlineInventories",
+    //       JSON.stringify(offlineList)
+    //     );
 
-        Alert.alert(
-          "Saved Offline",
-          "No internet. Inventory will sync automatically later."
-        );
-        router.push("/HomeScreen");
-      } catch (err) {
-        console.error("Failed to save locally:", err);
-        Alert.alert("Error", "Couldn't save inventory offline");
-      }
-    };
+    //     Alert.alert(
+    //       "Saved Offline",
+    //       "No internet. Inventory will sync automatically later."
+    //     );
+    //     router.push("/HomeScreen");
+    //   } catch (err) {
+    //     console.error("Failed to save locally:", err);
+    //     Alert.alert("Error", "Couldn't save inventory offline");
+    //   }
+    // };
 
     try {
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
-        await saveOffline();
+        // await saveOffline();
         return;
       }
 
       const saveRes = await fetch(
-        "http://192.168.50.54:3001/inventory/grouped",
+        "https://towi-react.onrender.com/inventory/grouped",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -427,7 +427,7 @@ export default function InventoryNextWeek() {
       if (!saveRes.ok) throw new Error("Failed to save inventory");
 
       if (previousWeekId) {
-        await fetch("http://192.168.50.54:3001/lock", {
+        await fetch("https://towi-react.onrender.com/lock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -442,7 +442,7 @@ export default function InventoryNextWeek() {
       router.push("/HomeScreen");
     } catch (err) {
       if (isNetworkError(err)) {
-        await saveOffline();
+        // await saveOffline();
       } else {
         console.error("Save error:", err);
         Alert.alert("Error", "Failed to save inventory");
@@ -706,6 +706,17 @@ export default function InventoryNextWeek() {
                                       style={{ fontSize: 11, color: "black" }}
                                     />
                                   </Picker>
+                                  <Icon
+                                    name="arrow-drop-down"
+                                    size={24}
+                                    color="black"
+                                    style={{
+                                      position: "absolute",
+                                      right: 10,
+                                      top: 13,
+                                      pointerEvents: "none", // ensures Picker underneath still responds
+                                    }}
+                                  />
                                 </View>
                               )}
 
@@ -717,6 +728,15 @@ export default function InventoryNextWeek() {
                                     height: 40,
                                     marginLeft: isBeginning ? 0 : 6,
                                     textAlign: "center",
+                                    backgroundColor:
+                                      availabilityValue === "Carried"
+                                        ? "#FFFFFF"
+                                        : "#f0f0f0", // light blue if carried, gray otherwise
+                                    borderColor:
+                                      availabilityValue === "Carried"
+                                        ? "#2c1c5c"
+                                        : "#ccc", // teal if carried
+                                    borderWidth: 1,
                                   },
                                 ]}
                                 keyboardType="numeric"

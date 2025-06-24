@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import styles from "./Style";
+import React, { useState } from "react";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import styles from "./Style";
 
 const SignUp = () => {
   const router = useRouter();
@@ -32,7 +32,7 @@ const SignUp = () => {
     }
 
     try {
-      const res = await fetch("http://192.168.50.54:3001/signup", {
+      const res = await fetch("https://towi-react.onrender.com/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -52,7 +52,7 @@ const SignUp = () => {
 
   const handleVerifyOtp = async () => {
     try {
-      const res = await fetch("http://192.168.50.54:3001/verify-otp", {
+      const res = await fetch("https://towi-react.onrender.com/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, otp }),

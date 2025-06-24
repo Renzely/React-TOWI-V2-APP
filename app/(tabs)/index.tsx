@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  Alert,
-  Switch,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import loginStyles from "./Style";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import NetInfo from "@react-native-community/netinfo";
 import { useAuth } from "./auth";
-import { useEffect } from "react";
+import loginStyles from "./Style";
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -22,67 +22,50 @@ const LoginScreen = () => {
   const [password, setPassword] = useState("");
   const [connectionType, setConnectionType] = useState("");
   const [isConnected, setIsConnected] = useState(true);
-  const [allowOfflineLogin, setAllowOfflineLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       setIsConnected(!!state.isConnected);
-      if (!state.isConnected) {
-        setConnectionType("No Internet Connection");
-      } else {
-        setConnectionType(
-          state.type.charAt(0).toUpperCase() + state.type.slice(1)
-        );
-      }
+      setConnectionType(
+        state.isConnected
+          ? state.type.charAt(0).toUpperCase() + state.type.slice(1)
+          : "No Internet Connection"
+      );
     });
 
     return () => unsubscribe();
   }, []);
 
+  // Add this useEffect at the top of your LoginScreen component
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (token) {
+        router.replace("/HomeScreen");
+      }
+    };
+
+    checkToken();
+  }, []);
+
   const handleLogin = async () => {
-    const netState = await NetInfo.fetch();
-
-    // Check if offline
-    if (!netState.isConnected || !netState.isInternetReachable) {
-      if (!allowOfflineLogin) {
-        Alert.alert(
-          "Offline Login Disabled",
-          "Please enable the 'Offline Login' option to proceed without internet."
-        );
-        return;
-      }
-
-      // Attempt offline login
-      try {
-        const storedUser = await AsyncStorage.getItem("user");
-        if (!storedUser) {
-          Alert.alert(
-            "Offline Login Failed",
-            "No stored user credentials found."
-          );
-          return;
-        }
-
-        const parsedUser = JSON.parse(storedUser);
-
-        if (parsedUser.email === email && parsedUser.password === password) {
-          await signIn("offline-token"); // use dummy token or customize
-          Alert.alert("Offline Login", "Logged in offline successfully!");
-          router.replace("/HomeScreen");
-        } else {
-          Alert.alert("Offline Login Failed", "Incorrect email or password.");
-        }
-      } catch (error) {
-        console.error("Offline login error:", error);
-        Alert.alert("Error", "Something went wrong during offline login.");
-      }
-
+    if (!email || !password) {
+      Alert.alert("Input Error", "Please enter both email and password.");
       return;
     }
 
-    // Online login logic
+    if (!isConnected) {
+      Alert.alert("No Internet", "You must be online to login.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const response = await fetch("http://192.168.50.54:3001/login", {
+      // Online login only
+      const response = await fetch("https://towi-react.onrender.com/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -92,29 +75,25 @@ const LoginScreen = () => {
 
       if (!response.ok) {
         Alert.alert("Login Failed", data.message || "Invalid credentials");
+        setLoading(false);
         return;
       }
 
       const user = data.user;
 
-      // ⚠️ Store user + password in AsyncStorage for offline login (not secure for production)
-      await AsyncStorage.setItem("user", JSON.stringify({ ...user, password }));
+      // Save user email and token for fetching filtered data later
 
-      await AsyncStorage.setItem("email", user?.email || data.email || email);
-
-      if (user?.outlet) {
-        const outletValue = Array.isArray(user.outlet)
-          ? user.outlet.join(",")
-          : user.outlet;
-        await AsyncStorage.setItem("outlet", outletValue);
-      }
-
+      await AsyncStorage.setItem("userEmail", user?.email || email);
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(user));
       await signIn(data.token);
       Alert.alert("Success", "Login successful!");
       router.replace("/HomeScreen");
     } catch (error) {
       Alert.alert("Error", "Something went wrong during login.");
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -145,43 +124,48 @@ const LoginScreen = () => {
       <TextInput
         style={[loginStyles.input, { marginTop: 3 }]}
         placeholder="Email"
-        placeholderTextColor="#ccc"
+        placeholderTextColor="white"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
       />
 
-      <TextInput
-        style={loginStyles.input}
-        placeholder="Password"
-        placeholderTextColor="#ccc"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginVertical: 10,
-        }}
-      >
-        <Switch
-          value={allowOfflineLogin}
-          onValueChange={(value) => setAllowOfflineLogin(value)}
-          thumbColor={allowOfflineLogin ? "green" : "gray"}
-          trackColor={{ false: "lightgray", true: "lightgreen" }}
+      <View style={{ position: "relative", width: "100%" }}>
+        <TextInput
+          style={[loginStyles.input, { paddingRight: 40 }]}
+          placeholder="Password"
+          placeholderTextColor="white"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
         />
-
-        <Text style={{ marginLeft: 10, color: "#black" }}>
-          Login As offline
-        </Text>
+        <TouchableOpacity
+          onPress={() => setShowPassword((prev) => !prev)}
+          style={{
+            position: "absolute",
+            right: 10,
+            top: 15,
+          }}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={24}
+            color="grey"
+          />
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={loginStyles.button} onPress={handleLogin}>
-        <Text style={loginStyles.buttonText}>Login</Text>
+      <TouchableOpacity
+        style={[loginStyles.button, { opacity: isConnected ? 1 : 0.5 }]}
+        onPress={handleLogin}
+        disabled={!isConnected}
+      >
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={loginStyles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -189,6 +173,12 @@ const LoginScreen = () => {
         onPress={() => router.push("/SignUp")}
       >
         <Text style={loginStyles.signupText}>Create Account</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={loginStyles.signupButton}
+        onPress={() => router.push("/ForgotPasswordScreen")}
+      >
+        <Text style={loginStyles.signupText}>Forgot Password?</Text>
       </TouchableOpacity>
     </View>
   );
