@@ -22,6 +22,11 @@ interface PickerItem {
   value: string;
 }
 
+type ExpiryEntry = {
+  month: string;
+  quantity: string;
+};
+
 interface AndroidPickerProps {
   label: string;
   selectedValue: string;
@@ -79,8 +84,10 @@ interface GroupedInventory {
         endingPCS: number;
         offtake: number;
         inventoryDays: number;
-        expiryMonths: string;
-        expiryQty: number;
+        expiry: Array<{
+          month: string;
+          quantity: number;
+        }>;
       }>;
       "Not Carried": Array<{ sku: string; skuCode: string }>;
     };
@@ -334,6 +341,95 @@ export default function InventoryNextWeek() {
     }
   };
 
+  const addExpiryEntry = (skuKey: string) => {
+    setSkuValues((prev: any) => {
+      const current = prev.expiry?.[version]?.[skuKey] || [];
+      const updated = [...current, { month: "", quantity: "" }];
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: {
+            ...(prev.expiry?.[version] || {}),
+            [skuKey]: updated,
+          },
+        },
+      };
+    });
+  };
+
+  const deleteExpiryEntry = (skuKey: string, index: number) => {
+    setSkuValues((prev: any) => {
+      const current = prev.expiry?.[version]?.[skuKey] || [];
+      const updated = current.filter(
+        (_entry: { month: string; quantity: string }, i: number) => i !== index
+      );
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: {
+            ...(prev.expiry?.[version] || {}),
+            [skuKey]: updated,
+          },
+        },
+      };
+    });
+  };
+
+  const handleExpiryEntryChange = (
+    skuKey: string,
+    index: number,
+    field: "month" | "quantity",
+    value: string
+  ) => {
+    setSkuValues((prev: any) => {
+      const currentList = prev.expiry?.[version]?.[skuKey] || [];
+      const updatedList = [...currentList];
+      updatedList[index] = {
+        ...updatedList[index],
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: {
+            ...(prev.expiry?.[version] || {}),
+            [skuKey]: updatedList,
+          },
+        },
+      };
+    });
+  };
+
+  useEffect(() => {
+    if (!skuData[version]) return;
+
+    setSkuValues((prev: any) => {
+      const alreadyInitialized = prev.expiry?.[version];
+
+      // ✅ Prevent infinite loop
+      if (alreadyInitialized) return prev;
+
+      const initialExpiry: any = {};
+      skuData[version].forEach((skuItem: any) => {
+        initialExpiry[skuItem.value] = [{ month: "", quantity: "" }];
+      });
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: initialExpiry,
+        },
+      };
+    });
+  }, [skuData, version]);
+
   const handleSubmit = async () => {
     if (!merchandiser || !outlet || !weeksCovered || !month || !week) {
       Alert.alert("Error", "Please fill in all required fields.");
@@ -367,7 +463,7 @@ export default function InventoryNextWeek() {
         const status = (availability[v]?.[skuKey] ||
           "Carried") as AvailabilityType;
         const commonFields = { sku: skuItem.label, skuCode: skuKey };
-
+        const expiryList = skuValues.expiry?.[v]?.[skuKey] || [];
         if (status === "Carried") {
           groupedInventory.versions[v][status].push({
             ...commonFields,
@@ -376,8 +472,12 @@ export default function InventoryNextWeek() {
             endingPCS: Number(skuValues.ending?.[v]?.[skuKey] || 0),
             offtake: Number(skuValues.offtake?.[v]?.[skuKey] || 0),
             inventoryDays: Number(skuValues.inventoryDays?.[v]?.[skuKey] || 0),
-            expiryMonths: skuValues.expiry?.[v]?.[skuKey] || "",
-            expiryQty: Number(skuValues.quantity?.[v]?.[skuKey] || 0),
+            expiry: Array.isArray(expiryList)
+              ? expiryList.map((entry) => ({
+                  month: entry.month,
+                  quantity: Number(entry.quantity) || 0,
+                }))
+              : [],
           });
         } else {
           groupedInventory.versions[v][status].push(commonFields);
@@ -778,63 +878,108 @@ export default function InventoryNextWeek() {
                 </TouchableOpacity>
 
                 {expandedSection === "Expiry" && (
-                  <TouchableOpacity
-                    style={{ marginTop: 10 }}
-                    activeOpacity={1}
-                    onPress={() => {}}
-                  >
-                    {filteredSkuOptions.map((skuItem) => (
-                      <View
-                        key={skuItem.value}
-                        style={[
-                          styles.skuItemRow,
-                          {
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginBottom: 12,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.skuText, { flex: 2 }]}>
+                  <View style={{ marginTop: 10 }}>
+                    {skuData[version]?.map((skuItem) => (
+                      <View key={skuItem.value} style={{ marginBottom: 16 }}>
+                        <Text style={[styles.skuText, { marginBottom: 6 }]}>
                           {skuItem.label}
                         </Text>
 
-                        <View style={{ flex: 3, marginHorizontal: 8 }}>
-                          <AndroidPicker
-                            label=""
-                            selectedValue={
-                              skuValues.expiry?.[version]?.[skuItem.value] || ""
-                            }
-                            onValueChange={(val: any) =>
-                              handleInputChange("expiry", skuItem.value, val)
-                            }
-                            items={[1, 2, 3, 4, 5, 6].map((n) => ({
-                              label: `${n} Month${n > 1 ? "s" : ""}`,
-                              value: String(n),
-                            }))}
-                          />
-                        </View>
+                        {(
+                          skuValues.expiry?.[version]?.[skuItem.value] || []
+                        ).map((entry: ExpiryEntry, index: number) => (
+                          <View
+                            key={`${skuItem.value}-${index}`}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginBottom: 8,
+                            }}
+                          >
+                            {/* Expiry Month Picker */}
+                            <View style={{ flex: 3, marginHorizontal: 8 }}>
+                              <AndroidPicker
+                                label=""
+                                selectedValue={entry.month}
+                                onValueChange={(val) =>
+                                  handleExpiryEntryChange(
+                                    skuItem.value,
+                                    index,
+                                    "month",
+                                    val
+                                  )
+                                }
+                                items={[1, 2, 3, 4, 5, 6].map((n) => ({
+                                  label: `${n} Month${n > 1 ? "s" : ""}`,
+                                  value: String(n),
+                                }))}
+                              />
+                            </View>
 
-                        <TextInput
-                          placeholder="Qty"
-                          style={[
-                            styles.inputBox,
-                            { flex: 1.5, height: 40, fontSize: 14 },
-                          ]}
-                          keyboardType="numeric"
-                          value={
-                            skuValues.quantity?.[version]?.[skuItem.value] || ""
-                          }
-                          onChangeText={(text) =>
-                            handleInputChange("quantity", skuItem.value, text)
-                          }
-                        />
+                            {/* Quantity Field */}
+                            <TextInput
+                              placeholder="Qty"
+                              placeholderTextColor={"grey"}
+                              style={[
+                                styles.inputBox,
+                                { flex: 2, height: 40, fontSize: 14 },
+                              ]}
+                              keyboardType="numeric"
+                              value={entry.quantity}
+                              onChangeText={(text) =>
+                                handleExpiryEntryChange(
+                                  skuItem.value,
+                                  index,
+                                  "quantity",
+                                  text
+                                )
+                              }
+                            />
+                          </View>
+                        ))}
+
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: 4,
+                          }}
+                        >
+                          {/* Add Button (Left) */}
+                          <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => addExpiryEntry(skuItem.value)}
+                          >
+                            <Text style={{ color: "#007bff", fontSize: 14 }}>
+                              + Add Expiry Entry
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Delete Last Entry Button (Right) */}
+                          {(skuValues.expiry?.[version]?.[skuItem.value]
+                            ?.length || 0) > 1 && (
+                            <TouchableOpacity
+                              activeOpacity={1}
+                              onPress={() =>
+                                deleteExpiryEntry(
+                                  skuItem.value,
+                                  (skuValues.expiry?.[version]?.[skuItem.value]
+                                    ?.length || 1) - 1
+                                )
+                              }
+                            >
+                              <Text style={{ color: "red", fontSize: 18 }}>
+                                X
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
                     ))}
-                  </TouchableOpacity>
+                  </View>
                 )}
               </View>
-
               <View style={{ marginVertical: 10 }}>
                 <TouchableOpacity
                   style={styles.expandButton}
