@@ -24,6 +24,11 @@ interface PickerItem {
   value: string;
 }
 
+type ExpiryEntry = {
+  month: string;
+  quantity: string;
+};
+
 interface AndroidPickerProps {
   label: string;
   selectedValue: string;
@@ -372,166 +377,166 @@ const InventoryProcess = () => {
         value: "BENG BENG CHOCOLATE 12X10X26.5G",
         code: "",
       },
-      {
-        label: "BENG-BENG SHARE IT 16X95G",
-        value: "BENG-BENG SHARE IT 16X95G",
-        code: "",
-      },
-      {
-        label: "CAL CHEESE CHEESE WAFER 20X10X20G",
-        value: "CAL CHEESE CHEESE WAFER 20X10X20G",
-        code: "",
-      },
-      {
-        label: "CAL CHEESE CHEESE WAFER 20X20X8.5G PH",
-        value: "CAL CHEESE CHEESE WAFER 20X20X8.5G PH",
-        code: "",
-      },
-      {
-        label: "CAL CHEESE CHEESE WAFER 60X48G PH",
-        value: "CAL CHEESE CHEESE WAFER 60X48G PH",
-        code: "",
-      },
-      {
-        label: "CAL CHEESE CHEESE CHOCO 20X10X20.5G",
-        value: "CAL CHEESE CHEESE CHOCO 20X10X20.5G",
-        code: "",
-      },
-      {
-        label: "CAL CHEESE CHEESE CHOCO 60X48G PH",
-        value: "CAL CHEESE CHEESE CHOCO 60X48G PH",
-        code: "",
-      },
-      {
-        label: "DANISA BUTTER COOKIES 12X454G",
-        value: "DANISA BUTTER COOKIES 12X454G",
-        code: "",
-      },
-      {
-        label: "MALKIST CAPPUCCINO 30X10X18G PH",
-        value: "MALKIST CAPPUCCINO 30X10X18G PH",
-        code: "",
-      },
-      {
-        label: "MALKIST CHOCOLATE 30X10X18G PH",
-        value: "MALKIST CHOCOLATE 30X10X18G PH",
-        code: "",
-      },
-      {
-        label: "SUPERSTAR TRIPLE CHOCOLATE 12X10X16G",
-        value: "SUPERSTAR TRIPLE CHOCOLATE 12X10X16G",
-        code: "",
-      },
-      {
-        label: "VALMER SANDWICH CHOCOLATE 12X10X36G",
-        value: "VALMER SANDWICH CHOCOLATE 12X10X36G",
-        code: "",
-      },
-      {
-        label: "WAFELLO BUTTER CARAMEL 20X10X20.5G PH",
-        value: "WAFELLO BUTTER CARAMEL 20X10X20.5G PH",
-        code: "",
-      },
-      {
-        label: "WAFELLO BUTTER CARAMEL 60X48G PH",
-        value: "WAFELLO BUTTER CARAMEL 60X48G PH",
-        code: "",
-      },
-      {
-        label: "WAFELLO CHOCOLATE WAFER 20X10X20.5G PH",
-        value: "WAFELLO CHOCOLATE WAFER 20X10X20.5G PH",
-        code: "",
-      },
-      {
-        label: "WAFELLO CHOCOLATE WAFER 60X48G PH",
-        value: "WAFELLO CHOCOLATE WAFER 60X48G PH",
-        code: "",
-      },
-      {
-        label: "WAFELLO COCO CREME 60X48G PH",
-        value: "WAFELLO COCO CREME 60X48G PH",
-        code: "",
-      },
-      {
-        label: "WAFELLO COCO CREME 20X10X20.5g PH",
-        value: "WAFELLO COCO CREME 20X10X20.5g PH",
-        code: "",
-      },
-      {
-        label: "FRES APPLEPEACH CANDY 24X150G",
-        value: "FRES APPLEPEACH CANDY 24X150G",
-        code: "",
-      },
-      {
-        label: "FRES MINT BARLEY 24X50X3G",
-        value: "FRES MINT BARLEY 24X50X3G",
-        code: "",
-      },
-      {
-        label: "FRES MINT CHERRY 24X50X3G",
-        value: "FRES MINT CHERRY 24X50X3G",
-        code: "",
-      },
-      {
-        label: "FRES MINT CHERRY JAR 12X200X3G",
-        value: "FRES MINT CHERRY JAR 12X200X3G",
-        code: "",
-      },
-      {
-        label: "FRES MINT GRAPE 24X50X3G",
-        value: "FRES MINT GRAPE 24X50X3G",
-        code: "",
-      },
-      {
-        label: "FRES MINT GRAPE JAR 12X200X3G",
-        value: "FRES MINT GRAPE JAR 12X200X3G",
-        code: "",
-      },
-      {
-        label: "FRES MINT BARLEY JAR 12X200X3G",
-        value: "FRES MINT BARLEY JAR 12X200X3G",
-        code: "",
-      },
-      {
-        label: "FRES MIXED CANDY JAR 12X600G",
-        value: "FRES MIXED CANDY JAR 12X600G",
-        code: "",
-      },
-      {
-        label: "KOPIKO CAPPUCCINO CANDY 24X175G",
-        value: "KOPIKO CAPPUCCINO CANDY 24X175G",
-        code: "",
-      },
-      {
-        label: "KOPIKO COFFEE CANDY 24 X 175G",
-        value: "KOPIKO COFFEE CANDY 24 X 175G",
-        code: "",
-      },
-      {
-        label: "KOPIKO COFFEE CANDY JAR 6 X 560G",
-        value: "KOPIKO COFFEE CANDY JAR 6 X 560G",
-        code: "",
-      },
-      {
-        label: "MALKIST SWEET GLAZED 12X10X28G PH",
-        value: "MALKIST SWEET GLAZED 12X10X28G PH",
-        code: "",
-      },
-      {
-        label: "MALKIST BARBECUE 12X10X28G PH",
-        value: "MALKIST BARBECUE 12X10X28G PH",
-        code: "",
-      },
-      {
-        label: "WOW PASTA CARBONARA 12X5X88G PH",
-        value: "WOW PASTA CARBONARA 12X5X88G PH",
-        code: "",
-      },
-      {
-        label: "WOW PASTA SPAGHETTI 12X5X86G PH",
-        value: "WOW PASTA SPAGHETTI 12X5X86G PH",
-        code: "",
-      },
+      // {
+      //   label: "BENG-BENG SHARE IT 16X95G",
+      //   value: "BENG-BENG SHARE IT 16X95G",
+      //   code: "",
+      // },
+      // {
+      //   label: "CAL CHEESE CHEESE WAFER 20X10X20G",
+      //   value: "CAL CHEESE CHEESE WAFER 20X10X20G",
+      //   code: "",
+      // },
+      // {
+      //   label: "CAL CHEESE CHEESE WAFER 20X20X8.5G PH",
+      //   value: "CAL CHEESE CHEESE WAFER 20X20X8.5G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "CAL CHEESE CHEESE WAFER 60X48G PH",
+      //   value: "CAL CHEESE CHEESE WAFER 60X48G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "CAL CHEESE CHEESE CHOCO 20X10X20.5G",
+      //   value: "CAL CHEESE CHEESE CHOCO 20X10X20.5G",
+      //   code: "",
+      // },
+      // {
+      //   label: "CAL CHEESE CHEESE CHOCO 60X48G PH",
+      //   value: "CAL CHEESE CHEESE CHOCO 60X48G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "DANISA BUTTER COOKIES 12X454G",
+      //   value: "DANISA BUTTER COOKIES 12X454G",
+      //   code: "",
+      // },
+      // {
+      //   label: "MALKIST CAPPUCCINO 30X10X18G PH",
+      //   value: "MALKIST CAPPUCCINO 30X10X18G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "MALKIST CHOCOLATE 30X10X18G PH",
+      //   value: "MALKIST CHOCOLATE 30X10X18G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "SUPERSTAR TRIPLE CHOCOLATE 12X10X16G",
+      //   value: "SUPERSTAR TRIPLE CHOCOLATE 12X10X16G",
+      //   code: "",
+      // },
+      // {
+      //   label: "VALMER SANDWICH CHOCOLATE 12X10X36G",
+      //   value: "VALMER SANDWICH CHOCOLATE 12X10X36G",
+      //   code: "",
+      // },
+      // {
+      //   label: "WAFELLO BUTTER CARAMEL 20X10X20.5G PH",
+      //   value: "WAFELLO BUTTER CARAMEL 20X10X20.5G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WAFELLO BUTTER CARAMEL 60X48G PH",
+      //   value: "WAFELLO BUTTER CARAMEL 60X48G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WAFELLO CHOCOLATE WAFER 20X10X20.5G PH",
+      //   value: "WAFELLO CHOCOLATE WAFER 20X10X20.5G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WAFELLO CHOCOLATE WAFER 60X48G PH",
+      //   value: "WAFELLO CHOCOLATE WAFER 60X48G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WAFELLO COCO CREME 60X48G PH",
+      //   value: "WAFELLO COCO CREME 60X48G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WAFELLO COCO CREME 20X10X20.5g PH",
+      //   value: "WAFELLO COCO CREME 20X10X20.5g PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES APPLEPEACH CANDY 24X150G",
+      //   value: "FRES APPLEPEACH CANDY 24X150G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MINT BARLEY 24X50X3G",
+      //   value: "FRES MINT BARLEY 24X50X3G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MINT CHERRY 24X50X3G",
+      //   value: "FRES MINT CHERRY 24X50X3G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MINT CHERRY JAR 12X200X3G",
+      //   value: "FRES MINT CHERRY JAR 12X200X3G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MINT GRAPE 24X50X3G",
+      //   value: "FRES MINT GRAPE 24X50X3G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MINT GRAPE JAR 12X200X3G",
+      //   value: "FRES MINT GRAPE JAR 12X200X3G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MINT BARLEY JAR 12X200X3G",
+      //   value: "FRES MINT BARLEY JAR 12X200X3G",
+      //   code: "",
+      // },
+      // {
+      //   label: "FRES MIXED CANDY JAR 12X600G",
+      //   value: "FRES MIXED CANDY JAR 12X600G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO CAPPUCCINO CANDY 24X175G",
+      //   value: "KOPIKO CAPPUCCINO CANDY 24X175G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO COFFEE CANDY 24 X 175G",
+      //   value: "KOPIKO COFFEE CANDY 24 X 175G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO COFFEE CANDY JAR 6 X 560G",
+      //   value: "KOPIKO COFFEE CANDY JAR 6 X 560G",
+      //   code: "",
+      // },
+      // {
+      //   label: "MALKIST SWEET GLAZED 12X10X28G PH",
+      //   value: "MALKIST SWEET GLAZED 12X10X28G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "MALKIST BARBECUE 12X10X28G PH",
+      //   value: "MALKIST BARBECUE 12X10X28G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WOW PASTA CARBONARA 12X5X88G PH",
+      //   value: "WOW PASTA CARBONARA 12X5X88G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "WOW PASTA SPAGHETTI 12X5X86G PH",
+      //   value: "WOW PASTA SPAGHETTI 12X5X86G PH",
+      //   code: "",
+      // },
     ],
     V2: [
       {
@@ -539,176 +544,176 @@ const InventoryProcess = () => {
         value: "KOPIKO BLANCA HANGER 24X10X30G",
         code: "",
       },
-      {
-        label: "KOPIKO BLANCA TWINPACK 12X10X2X29G",
-        value: "KOPIKO BLANCA TWINPACK 12X10X2X29G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BLANCA BAG 8X30X30G",
-        value: "KOPIKO BLANCA BAG 8X30X30G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BLANCA POUCH 24X10X30G",
-        value: "KOPIKO BLANCA POUCH 24X10X30G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BROWN PROMO TWIN 12x10x53.5g",
-        value: "KOPIKO BROWN PROMO TWIN 12x10x53.5g",
-        code: "",
-      },
-      {
-        label: "KOPIKO BROWN BAG 8X30X27.5G",
-        value: "KOPIKO BROWN BAG 8X30X27.5G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BLACK 3 IN ONE HANGER 24X10X30G",
-        value: "KOPIKO BLACK 3 IN ONE HANGER 24X10X30G",
-        code: "",
-      },
-      {
-        label: "ENERGEN VANILLA HANGER 24X10X40G",
-        value: "ENERGEN VANILLA HANGER 24X10X40G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BROWN COFFEE HANGER 24X10X27.5G",
-        value: "KOPIKO BROWN COFFEE HANGER 24X10X27.5G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BROWN POUCH 24X10X27.5G",
-        value: "KOPIKO BROWN POUCH 24X10X27.5G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BLACK 3IN1 BAG 8X30X30G",
-        value: "KOPIKO BLACK 3IN1 BAG 8X30X30G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BLACK 3IN1 POUCH 24X10X30G",
-        value: "KOPIKO BLACK 3IN1 POUCH 24X10X30G",
-        code: "",
-      },
-      {
-        label: "KOPIKO BLACK 3IN1 TWINPACK 12X10X2X28G",
-        value: "KOPIKO BLACK 3IN1 TWINPACK 12X10X2X28G",
-        code: "",
-      },
-      {
-        label: "KOPIKO CAPPUCCINO BAG 8X30X25G",
-        value: "KOPIKO CAPPUCCINO BAG 8X30X25G",
-        code: "",
-      },
-      {
-        label: "KOPIKO CAPPUCCINO COFFEE HANGER 24X10X25G",
-        value: "KOPIKO CAPPUCCINO COFFEE HANGER 24X10X25G",
-        code: "",
-      },
-      {
-        label: "KOPIKO CAPPUCCINO POUCH 24X10X25G",
-        value: "KOPIKO CAPPUCCINO POUCH 24X10X25G",
-        code: "",
-      },
-      {
-        label: "KOPIKO ORIGINAL DOUBLE CUPS 24X10X36G",
-        value: "KOPIKO ORIGINAL DOUBLE CUPS 24X10X36G",
-        code: "",
-      },
-      {
-        label: "KOPIKO L.A. COFFEE HANGER 24X10X25G",
-        value: "KOPIKO L.A. COFFEE HANGER 24X10X25G",
-        code: "",
-      },
-      {
-        label: "KOPIKO L.A. COFFEE POUCH 24X10X25G",
-        value: "KOPIKO L.A. COFFEE POUCH 24X10X25G",
-        code: "",
-      },
-      {
-        label: "ENERGEN CHOCOLATE BAG 8X30X40G",
-        value: "ENERGEN CHOCOLATE BAG 8X30X40G",
-        code: "",
-      },
-      {
-        label: "ENERGEN CHOCOLATE HANGER 24X10X40G",
-        value: "ENERGEN CHOCOLATE HANGER 24X10X40G",
-        code: "",
-      },
-      {
-        label: "ENERGEN CHOCOLATE POUCH 24X10X40G",
-        value: "ENERGEN CHOCOLATE POUCH 24X10X40G",
-        code: "",
-      },
-      {
-        label: "ENERGEN VANILLA BAG 8X30X40G",
-        value: "ENERGEN VANILLA BAG 8X30X40G",
-        code: "",
-      },
-      {
-        label: "ENERGEN VANILLA POUCH 24X10X40G",
-        value: "ENERGEN VANILLA POUCH 24X10X40G",
-        code: "",
-      },
-      {
-        label: "ENERGEN PANDESAL MATE 24X10X30G",
-        value: "ENERGEN PANDESAL MATE 24X10X30G",
-        code: "",
-      },
-      {
-        label: "ENERGEN CHAMPION HANGER 24X10X30G",
-        value: "ENERGEN CHAMPION HANGER 24X10X30G",
-        code: "",
-      },
-      {
-        label: "ENERGEN CHAMPION NBA TP 15X8X2X30G PH",
-        value: "ENERGEN CHAMPION NBA TP 15X8X2X30G PH",
-        code: "",
-      },
-      {
-        label: "KOPIKO CREAMY CARAMELO TP 12X10X2X25G",
-        value: "KOPIKO CREAMY CARAMELO TP 12X10X2X25G",
-        code: "",
-      },
-      {
-        label: "TORACAFE WHITE AND CREAMY 12X10X2X26G",
-        value: "TORACAFE WHITE AND CREAMY 12X10X2X26G",
-        code: "",
-      },
-      {
-        label: "KOPIKO CAFE MOCHA TWINPACK 12X10X2X25.5G",
-        value: "KOPIKO CAFE MOCHA TWINPACK 12X10X2X25.5G",
-        code: "",
-      },
-      {
-        label: "ENERGEN CHAMPION 40X345G",
-        value: "ENERGEN CHAMPION 40X345G",
-        code: "",
-      },
-      {
-        label: "KOPIKO SUPREMO PH 84X12X2G",
-        value: "KOPIKO SUPREMO PH 84X12X2G",
-        code: "",
-      },
-      {
-        label: "KOPIKO VOLCANIC DRIP JAVA 24X10X8G PH",
-        value: "KOPIKO VOLCANIC DRIP JAVA 24X10X8G PH",
-        code: "",
-      },
-      {
-        label: "KOPIKO VOLCANIC DRIP MANDHELING 24X10X8G PH",
-        value: "KOPIKO VOLCANIC DRIP MANDHELING 24X10X8G PH",
-        code: "",
-      },
-      {
-        label: "KOPIKO VOLCANIC DRIP TORAJA 24X10X8G PH",
-        value: "KOPIKO VOLCANIC DRIP TORAJA 24X10X8G PH",
-        code: "",
-      },
+      // {
+      //   label: "KOPIKO BLANCA TWINPACK 12X10X2X29G",
+      //   value: "KOPIKO BLANCA TWINPACK 12X10X2X29G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BLANCA BAG 8X30X30G",
+      //   value: "KOPIKO BLANCA BAG 8X30X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BLANCA POUCH 24X10X30G",
+      //   value: "KOPIKO BLANCA POUCH 24X10X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BROWN PROMO TWIN 12x10x53.5g",
+      //   value: "KOPIKO BROWN PROMO TWIN 12x10x53.5g",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BROWN BAG 8X30X27.5G",
+      //   value: "KOPIKO BROWN BAG 8X30X27.5G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BLACK 3 IN ONE HANGER 24X10X30G",
+      //   value: "KOPIKO BLACK 3 IN ONE HANGER 24X10X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN VANILLA HANGER 24X10X40G",
+      //   value: "ENERGEN VANILLA HANGER 24X10X40G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BROWN COFFEE HANGER 24X10X27.5G",
+      //   value: "KOPIKO BROWN COFFEE HANGER 24X10X27.5G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BROWN POUCH 24X10X27.5G",
+      //   value: "KOPIKO BROWN POUCH 24X10X27.5G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BLACK 3IN1 BAG 8X30X30G",
+      //   value: "KOPIKO BLACK 3IN1 BAG 8X30X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BLACK 3IN1 POUCH 24X10X30G",
+      //   value: "KOPIKO BLACK 3IN1 POUCH 24X10X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO BLACK 3IN1 TWINPACK 12X10X2X28G",
+      //   value: "KOPIKO BLACK 3IN1 TWINPACK 12X10X2X28G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO CAPPUCCINO BAG 8X30X25G",
+      //   value: "KOPIKO CAPPUCCINO BAG 8X30X25G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO CAPPUCCINO COFFEE HANGER 24X10X25G",
+      //   value: "KOPIKO CAPPUCCINO COFFEE HANGER 24X10X25G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO CAPPUCCINO POUCH 24X10X25G",
+      //   value: "KOPIKO CAPPUCCINO POUCH 24X10X25G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO ORIGINAL DOUBLE CUPS 24X10X36G",
+      //   value: "KOPIKO ORIGINAL DOUBLE CUPS 24X10X36G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO L.A. COFFEE HANGER 24X10X25G",
+      //   value: "KOPIKO L.A. COFFEE HANGER 24X10X25G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO L.A. COFFEE POUCH 24X10X25G",
+      //   value: "KOPIKO L.A. COFFEE POUCH 24X10X25G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN CHOCOLATE BAG 8X30X40G",
+      //   value: "ENERGEN CHOCOLATE BAG 8X30X40G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN CHOCOLATE HANGER 24X10X40G",
+      //   value: "ENERGEN CHOCOLATE HANGER 24X10X40G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN CHOCOLATE POUCH 24X10X40G",
+      //   value: "ENERGEN CHOCOLATE POUCH 24X10X40G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN VANILLA BAG 8X30X40G",
+      //   value: "ENERGEN VANILLA BAG 8X30X40G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN VANILLA POUCH 24X10X40G",
+      //   value: "ENERGEN VANILLA POUCH 24X10X40G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN PANDESAL MATE 24X10X30G",
+      //   value: "ENERGEN PANDESAL MATE 24X10X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN CHAMPION HANGER 24X10X30G",
+      //   value: "ENERGEN CHAMPION HANGER 24X10X30G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN CHAMPION NBA TP 15X8X2X30G PH",
+      //   value: "ENERGEN CHAMPION NBA TP 15X8X2X30G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO CREAMY CARAMELO TP 12X10X2X25G",
+      //   value: "KOPIKO CREAMY CARAMELO TP 12X10X2X25G",
+      //   code: "",
+      // },
+      // {
+      //   label: "TORACAFE WHITE AND CREAMY 12X10X2X26G",
+      //   value: "TORACAFE WHITE AND CREAMY 12X10X2X26G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO CAFE MOCHA TWINPACK 12X10X2X25.5G",
+      //   value: "KOPIKO CAFE MOCHA TWINPACK 12X10X2X25.5G",
+      //   code: "",
+      // },
+      // {
+      //   label: "ENERGEN CHAMPION 40X345G",
+      //   value: "ENERGEN CHAMPION 40X345G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO SUPREMO PH 84X12X2G",
+      //   value: "KOPIKO SUPREMO PH 84X12X2G",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO VOLCANIC DRIP JAVA 24X10X8G PH",
+      //   value: "KOPIKO VOLCANIC DRIP JAVA 24X10X8G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO VOLCANIC DRIP MANDHELING 24X10X8G PH",
+      //   value: "KOPIKO VOLCANIC DRIP MANDHELING 24X10X8G PH",
+      //   code: "",
+      // },
+      // {
+      //   label: "KOPIKO VOLCANIC DRIP TORAJA 24X10X8G PH",
+      //   value: "KOPIKO VOLCANIC DRIP TORAJA 24X10X8G PH",
+      //   code: "",
+      // },
     ],
     V3: [
       // { label: "Select SKU", value: "", code: "" },
@@ -717,31 +722,31 @@ const InventoryProcess = () => {
         value: "KOPIKO LUCKY DAY 24X180ML",
         code: "",
       },
-      {
-        label: "LE MINERALE 12x1500ML",
-        value: "LE MINERALE 12x1500ML",
-        code: "",
-      },
-      {
-        label: "LE MINERALE 24x330ML",
-        value: "LE MINERALE 24x330ML",
-        code: "",
-      },
-      {
-        label: "LE MINERALE 24x600ML",
-        value: "LE MINERALE 24x600ML",
-        code: "",
-      },
-      {
-        label: "LE MINERALE 4X5000ML",
-        value: "LE MINERALE 4X5000ML",
-        code: "",
-      },
-      {
-        label: "TEH PUCUK HARUM 24X350ML",
-        value: "TEH PUCUK HARUM 24X350ML",
-        code: "",
-      },
+      // {
+      //   label: "LE MINERALE 12x1500ML",
+      //   value: "LE MINERALE 12x1500ML",
+      //   code: "",
+      // },
+      // {
+      //   label: "LE MINERALE 24x330ML",
+      //   value: "LE MINERALE 24x330ML",
+      //   code: "",
+      // },
+      // {
+      //   label: "LE MINERALE 24x600ML",
+      //   value: "LE MINERALE 24x600ML",
+      //   code: "",
+      // },
+      // {
+      //   label: "LE MINERALE 4X5000ML",
+      //   value: "LE MINERALE 4X5000ML",
+      //   code: "",
+      // },
+      // {
+      //   label: "TEH PUCUK HARUM 24X350ML",
+      //   value: "TEH PUCUK HARUM 24X350ML",
+      //   code: "",
+      // },
     ],
   };
 
@@ -774,6 +779,95 @@ const InventoryProcess = () => {
 
     return completedCount;
   };
+
+  const addExpiryEntry = (skuKey: string) => {
+    setSkuValues((prev: any) => {
+      const current = prev.expiry?.[version]?.[skuKey] || [];
+      const updated = [...current, { month: "", quantity: "" }];
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: {
+            ...(prev.expiry?.[version] || {}),
+            [skuKey]: updated,
+          },
+        },
+      };
+    });
+  };
+
+  const deleteExpiryEntry = (skuKey: string, index: number) => {
+    setSkuValues((prev: any) => {
+      const current = prev.expiry?.[version]?.[skuKey] || [];
+      const updated = current.filter(
+        (_entry: { month: string; quantity: string }, i: number) => i !== index
+      );
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: {
+            ...(prev.expiry?.[version] || {}),
+            [skuKey]: updated,
+          },
+        },
+      };
+    });
+  };
+
+  const handleExpiryEntryChange = (
+    skuKey: string,
+    index: number,
+    field: "month" | "quantity",
+    value: string
+  ) => {
+    setSkuValues((prev: any) => {
+      const currentList = prev.expiry?.[version]?.[skuKey] || [];
+      const updatedList = [...currentList];
+      updatedList[index] = {
+        ...updatedList[index],
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: {
+            ...(prev.expiry?.[version] || {}),
+            [skuKey]: updatedList,
+          },
+        },
+      };
+    });
+  };
+
+  useEffect(() => {
+    if (!skuData[version]) return;
+
+    setSkuValues((prev: any) => {
+      const alreadyInitialized = prev.expiry?.[version];
+
+      // ✅ Prevent infinite loop
+      if (alreadyInitialized) return prev;
+
+      const initialExpiry: any = {};
+      skuData[version].forEach((skuItem: any) => {
+        initialExpiry[skuItem.value] = [{ month: "1", quantity: "" }];
+      });
+
+      return {
+        ...prev,
+        expiry: {
+          ...prev.expiry,
+          [version]: initialExpiry,
+        },
+      };
+    });
+  }, [skuData, version]);
 
   // Always the fixed total of all SKUs across V1, V2, V3
   const getTotalSkuCount = () => {
@@ -864,6 +958,7 @@ const InventoryProcess = () => {
           sku: skuItem.label,
           skuCode: skuKey,
         };
+        const expiryList = skuValues.expiry?.[v]?.[skuKey] || [];
 
         if (status === "Carried") {
           groupedInventory.versions[v][status].push({
@@ -873,8 +968,12 @@ const InventoryProcess = () => {
             endingPCS: Number(skuValues.ending?.[v]?.[skuKey] || 0),
             offtake: Number(skuValues.offtake?.[v]?.[skuKey] || 0),
             inventoryDays: Number(skuValues.inventoryDays?.[v]?.[skuKey] || 0),
-            expiryMonths: skuValues.expiry?.[skuKey] || "",
-            expiryQty: Number(skuValues.quantity?.[skuKey] || 0),
+            expiry: Array.isArray(expiryList)
+              ? expiryList.map((entry) => ({
+                  month: entry.month,
+                  quantity: Number(entry.quantity) || 0,
+                }))
+              : [],
           });
         } else {
           groupedInventory.versions[v][status].push(commonFields);
@@ -1311,56 +1410,102 @@ const InventoryProcess = () => {
                 {expandedSection === "Expiry" && (
                   <View style={{ marginTop: 10 }}>
                     {skuData[version]?.map((skuItem) => (
-                      <TouchableOpacity
-                        key={skuItem.value}
-                        activeOpacity={1} // Removes the opacity effect when pressed
-                        onPress={() => {}} // Empty function
-                        style={[
-                          styles.skuItemRow,
-                          {
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginBottom: 12,
-                          },
-                        ]}
-                      >
-                        {/* SKU Label */}
-                        <Text style={[styles.skuText, { flex: 2 }]}>
+                      <View key={skuItem.value} style={{ marginBottom: 16 }}>
+                        <Text style={[styles.skuText, { marginBottom: 6 }]}>
                           {skuItem.label}
                         </Text>
 
-                        {/* Expiry Month Picker */}
-                        <View style={{ flex: 3, marginHorizontal: 8 }}>
-                          <AndroidPicker
-                            label=""
-                            selectedValue={
-                              skuValues.expiry[skuItem.value] || ""
-                            }
-                            onValueChange={(val) =>
-                              handleExpiryChange(skuItem.value, val)
-                            }
-                            items={[1, 2, 3, 4, 5, 6].map((n) => ({
-                              label: `${n} Month${n > 1 ? "s" : ""}`,
-                              value: String(n),
-                            }))}
-                          />
-                        </View>
+                        {(
+                          skuValues.expiry?.[version]?.[skuItem.value] || []
+                        ).map((entry: ExpiryEntry, index: number) => (
+                          <View
+                            key={`${skuItem.value}-${index}`}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              marginBottom: 8,
+                            }}
+                          >
+                            {/* Expiry Month Picker */}
+                            <View style={{ flex: 3, marginHorizontal: 8 }}>
+                              <AndroidPicker
+                                label=""
+                                selectedValue={entry.month}
+                                onValueChange={(val) =>
+                                  handleExpiryEntryChange(
+                                    skuItem.value,
+                                    index,
+                                    "month",
+                                    val
+                                  )
+                                }
+                                items={[1, 2, 3, 4, 5, 6].map((n) => ({
+                                  label: `${n} Month${n > 1 ? "s" : ""}`,
+                                  value: String(n),
+                                }))}
+                              />
+                            </View>
 
-                        {/* Quantity Field */}
-                        <TextInput
-                          placeholder="Qty"
-                          placeholderTextColor={"grey"}
-                          style={[
-                            styles.inputBox,
-                            { flex: 1.5, height: 40, fontSize: 14 },
-                          ]}
-                          keyboardType="numeric"
-                          value={skuValues.quantity[skuItem.value] || ""}
-                          onChangeText={(text) =>
-                            handleQuantityChange(skuItem.value, text)
-                          }
-                        />
-                      </TouchableOpacity>
+                            {/* Quantity Field */}
+                            <TextInput
+                              placeholder="Qty"
+                              placeholderTextColor={"grey"}
+                              style={[
+                                styles.inputBox,
+                                { flex: 2, height: 40, fontSize: 14 },
+                              ]}
+                              keyboardType="numeric"
+                              value={entry.quantity}
+                              onChangeText={(text) =>
+                                handleExpiryEntryChange(
+                                  skuItem.value,
+                                  index,
+                                  "quantity",
+                                  text
+                                )
+                              }
+                            />
+                          </View>
+                        ))}
+
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginTop: 4,
+                          }}
+                        >
+                          {/* Add Button (Left) */}
+                          <TouchableOpacity
+                            activeOpacity={1}
+                            onPress={() => addExpiryEntry(skuItem.value)}
+                          >
+                            <Text style={{ color: "#007bff", fontSize: 14 }}>
+                              + Add Expiry Entry
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Delete Last Entry Button (Right) */}
+                          {(skuValues.expiry?.[version]?.[skuItem.value]
+                            ?.length || 0) > 1 && (
+                            <TouchableOpacity
+                              activeOpacity={1}
+                              onPress={() =>
+                                deleteExpiryEntry(
+                                  skuItem.value,
+                                  (skuValues.expiry?.[version]?.[skuItem.value]
+                                    ?.length || 1) - 1
+                                )
+                              }
+                            >
+                              <Text style={{ color: "red", fontSize: 18 }}>
+                                X
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
                     ))}
                   </View>
                 )}

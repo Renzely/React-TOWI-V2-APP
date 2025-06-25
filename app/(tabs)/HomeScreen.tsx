@@ -25,6 +25,11 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "./auth";
 import styles from "./Style";
 
+type ExpiryEntry = {
+  month: string;
+  quantity: number;
+};
+
 type SKUCarried = {
   sku: string;
   skuCode: string;
@@ -33,8 +38,7 @@ type SKUCarried = {
   endingPCS: number;
   offtake: number;
   inventoryDays: number;
-  expiryMonths: string;
-  expiryQty: number;
+  expiry: ExpiryEntry[];
 };
 
 type SKUInfo = {
@@ -1041,17 +1045,14 @@ const InventoryCard: React.FC<{ item: InventoryItem }> = ({ item }) => {
   version.forEach((ver) => {
     const carriedSKUs = versions[ver]?.Carried || [];
 
+    // Safely convert endingPCS to string
     skuValues.ending[ver] = Object.fromEntries(
-      carriedSKUs.map((sku) => [sku.skuCode, sku.endingPCS.toString()])
-    );
-
-    skuValues.expiry[ver] = carriedSKUs.reduce((acc, sku) => {
-      acc[sku.skuCode] = Number(sku.expiryMonths); // ✅ ensure number
-      return acc;
-    }, {} as Record<string, number>);
-
-    skuValues.quantity[ver] = Object.fromEntries(
-      carriedSKUs.map((sku) => [sku.skuCode, sku.expiryQty.toString()])
+      carriedSKUs.map((sku) => [
+        sku.skuCode,
+        sku.endingPCS !== undefined && sku.endingPCS !== null
+          ? sku.endingPCS.toString()
+          : "0",
+      ])
     );
 
     const allSKUs = [
@@ -1095,10 +1096,27 @@ const InventoryCard: React.FC<{ item: InventoryItem }> = ({ item }) => {
           <Text style={styles.itemText}>Ending PCS: {sku.endingPCS}</Text>
           <Text style={styles.itemText}>Offtake: {sku.offtake}</Text>
           <Text style={styles.itemText}>IDL: {sku.inventoryDays}</Text>
-          <Text style={styles.itemText}>
-            Expiry (Months): {sku.expiryMonths}
-          </Text>
-          <Text style={styles.itemText}>Expiry Qty: {sku.expiryQty}</Text>
+
+          {/* 👇 This section renders the new expiry format */}
+          {Array.isArray(sku.expiry) && sku.expiry.length > 0 && (
+            <View style={{ marginTop: 4 }}>
+              <Text style={[styles.itemText, { fontWeight: "bold" }]}>
+                Expiry Entries:
+              </Text>
+              {sku.expiry.map(
+                (
+                  entry: { month?: string | number; quantity?: number },
+                  index: number
+                ) =>
+                  entry?.month ? (
+                    <Text key={index} style={styles.itemText}>
+                      {entry.month} Month{entry.month !== "1" ? "s" : ""} — Qty:{" "}
+                      {entry.quantity ?? 0}
+                    </Text>
+                  ) : null
+              )}
+            </View>
+          )}
         </>
       )}
     </View>
@@ -1183,21 +1201,8 @@ const InventoryCard: React.FC<{ item: InventoryItem }> = ({ item }) => {
 
   return (
     <TouchableOpacity
-      onPress={() => {
-        // if (!item.isOffline) {
-        //   setExpanded(!expanded);
-        // } else {
-        //   Alert.alert(
-        //     "Sync Required",
-        //     "Please sync this inventory to view details."
-        //   );
-        // }
-      }}
-      style={[
-        styles.tileContainer,
-        item.isOffline && { backgroundColor: "#ffe082" }, // Yellow background for offline
-        isLocked && styles.lockedContainer,
-      ]}
+      onPress={() => setExpanded(!expanded)}
+      style={[styles.tileContainer, isLocked && styles.lockedContainer]}
     >
       <View
         style={{
@@ -1216,36 +1221,24 @@ const InventoryCard: React.FC<{ item: InventoryItem }> = ({ item }) => {
           </Text>
         </View>
 
-        {!item.isOffline && (
-          <TouchableOpacity
-            style={{
-              backgroundColor: isLocked ? "#e0e0e0" : "#4caf50",
-              padding: 8,
-              borderRadius: 20,
-            }}
-            onPress={() => {
-              if (!isLocked) {
-                handleGoToNextWeek();
-              }
-            }}
-            disabled={isLocked}
-          >
-            <Icon name="edit-document" size={20} color="#fff" />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={{
+            backgroundColor: isLocked ? "#e0e0e0" : "#4caf50",
+            padding: 8,
+            borderRadius: 20,
+          }}
+          onPress={() => {
+            if (!isLocked) {
+              handleGoToNextWeek();
+            }
+          }}
+          disabled={isLocked}
+        >
+          <Icon name="edit-document" size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
 
-      {item.isOffline && (
-        <View
-          style={{ backgroundColor: "#ffc107", padding: 8, borderRadius: 6 }}
-        >
-          <Text style={{ textAlign: "center", color: "#333" }}>
-            This inventory was saved offline. Please sync to view full details.
-          </Text>
-        </View>
-      )}
-
-      {expanded && !item.isOffline && (
+      {expanded && (
         <View style={styles.tileDetails}>
           <Text style={styles.itemText}>
             Weeks Covered: {item.weeksCovered}
